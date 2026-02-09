@@ -1,0 +1,35 @@
+<template>
+    <lightning-card title="Sign Document" icon-name="action:signature">
+        <div class="slds-p-horizontal_medium">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading signing interface..."></lightning-spinner>
+            </template>
+
+            <template if:false={signingUrl}>
+                <template if:false={isLoading}>
+                    <div class="slds-text-body_regular slds-text-color_weak">
+                        No signing session active. Use "Send for Signature" to create one.
+                    </div>
+                </template>
+            </template>
+
+            <template if:true={signingUrl}>
+                <div class="signing-container" style="height: 700px; border: 1px solid #d8dde6; border-radius: 4px;">
+                    <iframe
+                        src={signingUrl}
+                        title="CoSeal Signing"
+                        style="width: 100%; height: 100%; border: none;"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                    ></iframe>
+                </div>
+            </template>
+
+            <template if:true={completedMessage}>
+                <div class="slds-box slds-theme_success slds-m-top_small">
+                    <lightning-icon icon-name="utility:check" variant="inverse" size="small"></lightning-icon>
+                    <span class="slds-m-left_small">{completedMessage}</span>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

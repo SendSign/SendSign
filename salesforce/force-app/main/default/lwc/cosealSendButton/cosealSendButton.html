@@ -1,0 +1,81 @@
+<template>
+    <lightning-card title="Send for Signature" icon-name="action:signature">
+        <div class="slds-p-horizontal_medium">
+            <template if:false={showModal}>
+                <lightning-button
+                    label="Send for Signature"
+                    variant="brand"
+                    icon-name="utility:send"
+                    onclick={handleOpenModal}
+                    disabled={isLoading}
+                ></lightning-button>
+            </template>
+
+            <template if:true={showModal}>
+                <section role="dialog" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 class="slds-modal__title">Send for Signature</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <lightning-combobox
+                                name="template"
+                                label="Template"
+                                value={selectedTemplate}
+                                placeholder="Select a template..."
+                                options={templateOptions}
+                                onchange={handleTemplateChange}
+                                required
+                            ></lightning-combobox>
+
+                            <lightning-input
+                                type="email"
+                                label="Signer Email"
+                                value={signerEmail}
+                                onchange={handleEmailChange}
+                                required
+                                class="slds-m-top_small"
+                            ></lightning-input>
+
+                            <lightning-input
+                                type="text"
+                                label="Signer Name"
+                                value={signerName}
+                                onchange={handleNameChange}
+                                required
+                                class="slds-m-top_small"
+                            ></lightning-input>
+
+                            <template if:true={errorMessage}>
+                                <div class="slds-text-color_error slds-m-top_small">
+                                    {errorMessage}
+                                </div>
+                            </template>
+
+                            <template if:true={successMessage}>
+                                <div class="slds-text-color_success slds-m-top_small">
+                                    {successMessage}
+                                </div>
+                            </template>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning-button
+                                label="Cancel"
+                                onclick={handleCloseModal}
+                                disabled={isLoading}
+                            ></lightning-button>
+                            <lightning-button
+                                label="Send"
+                                variant="brand"
+                                onclick={handleSend}
+                                disabled={isLoading}
+                                class="slds-m-left_x-small"
+                            ></lightning-button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -36,7 +36,57 @@ function initEmailSender() {
 }
 
 /**
- * Load and render an HTML email template.
+ * Cached branding config to avoid DB lookups on every email.
+ */
+let brandingCache: {
+  companyName: string;
+  primaryColor: string;
+  logoUrl: string | null;
+  emailFooter: string | null;
+  loaded: boolean;
+} = {
+  companyName: 'CoSeal',
+  primaryColor: '#2563EB',
+  logoUrl: null,
+  emailFooter: null,
+  loaded: false,
+};
+
+/**
+ * Load branding config from database (Step 32).
+ * Caches result to avoid repeated lookups.
+ */
+async function loadBrandingConfig(): Promise<typeof brandingCache> {
+  if (brandingCache.loaded) return brandingCache;
+
+  try {
+    const { getDb } = await import('../db/connection.js');
+    const { brandingConfigs } = await import('../db/schema.js');
+    const db = getDb();
+
+    const configs = await db.select().from(brandingConfigs).limit(1);
+    if (configs.length > 0) {
+      const config = configs[0];
+      brandingCache = {
+        companyName: config.companyName || 'CoSeal',
+        primaryColor: config.primaryColor || '#2563EB',
+        logoUrl: config.logoUrl || null,
+        emailFooter: config.emailFooter || null,
+        loaded: true,
+      };
+    } else {
+      brandingCache.loaded = true;
+    }
+  } catch {
+    // If DB not available, use defaults
+    brandingCache.loaded = true;
+  }
+
+  return brandingCache;
+}
+
+/**
+ * Load and render an HTML email template with branding injection.
  */
 function renderTemplate(templateName: string, variables: Record<string, string>): string {
   const templatePath = path.resolve(
@@ -50,6 +100,13 @@ function renderTemplate(templateName: string, variables: Record<string, string>)
   }
 
   let html = fs.readFileSync(templatePath, 'utf-8');
+
+  // Inject branding variables
+  const branding = brandingCache;
+  variables['brandCompanyName'] = branding.companyName;
+  variables['brandPrimaryColor'] = branding.primaryColor;
+  variables['brandLogoUrl'] = branding.logoUrl || '';
+  variables['brandEmailFooter'] = branding.emailFooter || `Powered by ${branding.companyName}`;
 
   // Replace template variables
   for (const [key, value] of Object.entries(variables)) {
@@ -71,8 +128,13 @@ async function sendEmail(
     initEmailSender();
   }
 
+  // Load branding config on first use
+  if (!brandingCache.loaded) {
+    await loadBrandingConfig();
+  }
+
   const from = process.env.SENDGRID_FROM_EMAIL ?? process.env.SMTP_FROM ?? 'noreply@coseal.local';
-  const fromName = process.env.SENDGRID_FROM_NAME ?? 'CoSeal';
+  const fromName = process.env.SENDGRID_FROM_NAME ?? brandingCache.companyName;
 
   if (sendgridConfigured) {
     try {

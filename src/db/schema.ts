@@ -502,6 +502,25 @@ export const commentsRelations = relations(comments, ({ one, many }) => ({
   }),
 }));
 
+// ─── Branding Configuration (Step 32) ───────────────────────────
+
+export const brandingConfigs = pgTable('branding_config', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').references(() => organizations.id),
+  logoUrl: text('logo_url'),
+  logoData: text('logo_data'), // Base64-encoded logo
+  primaryColor: text('primary_color').notNull().default('#2563EB'),
+  secondaryColor: text('secondary_color').notNull().default('#1E40AF'),
+  accentColor: text('accent_color').notNull().default('#3B82F6'),
+  companyName: text('company_name'), // Replaces "CoSeal" in UI
+  emailFooter: text('email_footer'), // Custom email footer text
+  signingHeader: text('signing_header'), // Custom text above signing area
+  faviconUrl: text('favicon_url'),
+  customCss: text('custom_css'), // Additional CSS overrides (sandboxed)
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─── Type exports ────────────────────────────────────────────────
 
 export type Envelope = typeof envelopes.$inferSelect;
@@ -530,3 +549,5 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = typeof comments.$inferInsert;
+export type BrandingConfig = typeof brandingConfigs.$inferSelect;
+export type InsertBrandingConfig = typeof brandingConfigs.$inferInsert;

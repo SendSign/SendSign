@@ -5,6 +5,46 @@ All notable changes to CoSeal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-09
+
+### Added — Steps 29-32
+
+#### Document Generation / Mail Merge (Step 29)
+- `POST /api/envelopes/generate` — Create envelope with merged template data
+- `POST /api/envelopes/bulk` — Bulk send with per-recipient merge data
+- `POST /api/envelopes/bulk/csv` — CSV upload for bulk merge and send
+- `GET /api/envelopes/bulk/:batchId/status` — Track bulk send progress
+- Mail merge module with PDF and DOCX template support
+- CSV parsing for bulk data import
+
+#### Enhanced Analytics (Step 30)
+- `GET /api/admin/analytics` enhanced with `userId`, `dateFrom`, `dateTo`, `groupBy` filters
+- `GET /api/admin/analytics/users` — Per-user analytics breakdown
+- `GET /api/admin/analytics/templates` — Per-template usage statistics
+- `GET /api/admin/analytics/export` — CSV export for analytics data
+
+#### CoSeal for Salesforce (Step 31)
+- Complete Salesforce managed package (`salesforce/` directory)
+- Apex classes: CoSealService, CoSealEnvelopeController, CoSealWebhookHandler, CoSealConfig
+- LWC components: Send Button, Signing Embed (iframe), Envelope Status, Admin Config
+- Custom settings for API URL/Key, field mapping metadata, permission sets
+- `POST /api/envelopes/:id/embedded-signing` — Embedded signing URL for iframes
+- CORS configuration for Salesforce domains
+- Apex test classes with HTTP callout mocking (75%+ coverage)
+
+#### White-Label Branding (Step 32)
+- `branding_config` schema table for full branding customization
+- `GET /api/admin/branding` — Read branding configuration
+- `PUT /api/admin/branding` — Update branding (requires entitlement)
+- `DELETE /api/admin/branding` — Reset to defaults
+- CoSealBranding.tsx updated for three modes: default, clean white-label, custom
+- Email templates inject branding variables (logo, colors, footer)
+- Certificate of Completion uses custom company name
+- CSS custom properties for color theming (`--coseal-primary`, etc.)
+- Input validation: hex colors, logo size limits, CSS sanitization
+
+---
+
 ## [1.0.0] - 2026-02-08
 
 ### 🚀 Initial Release

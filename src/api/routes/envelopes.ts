@@ -14,11 +14,12 @@ import { correctEnvelope } from '../../workflow/envelopeCorrector.js';
 import { uploadDocument } from '../../storage/documentStore.js';
 import { hashDocument } from '../../crypto/hasher.js';
 import { getDb } from '../../db/connection.js';
-import { documents } from '../../db/schema.js';
+import { documents, envelopes as envelopesTable, signers as signersTable, fields as fieldsTable, folders, envelopeFolders, templates } from '../../db/schema.js';
 import { v4 as uuidv4 } from 'uuid';
 import { enforceEnvelopeLimit, enforceVerificationLevel } from '../middleware/planEnforcement.js';
 import { getOrganizationId } from '../middleware/auth.js';
 import { requireRole, requireOwnership } from '../middleware/rbac.js';
+import { eq, and, or, inArray } from 'drizzle-orm';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -462,6 +463,258 @@ router.get('/folders/:id/envelopes', async (req, res) => {
     .where(inArray(envelopes.id, envelopeIds));
 
   res.json({ success: true, data: folderEnvelopes });
+});
+
+// ─── Embedded Signing (Step 31 — Salesforce Support) ────────────
+
+/**
+ * POST /api/envelopes/:id/embedded-signing
+ * Generate a short-lived embedded signing URL for iframe-based signing.
+ * Used by the Salesforce managed package and SDK.
+ */
+router.post('/:id/embedded-signing', async (req, res) => {
+  const { id } = req.params;
+  const { signerEmail, returnUrl } = req.body;
+
+  if (!signerEmail) {
+    return res.status(400).json({ success: false, error: 'signerEmail is required' });
+  }
+
+  const db = getDb();
+
+  // Find the signer by email within this envelope
+  const [signer] = await db
+    .select()
+    .from(signersTable)
+    .where(
+      and(
+        eq(signersTable.envelopeId, id),
+        eq(signersTable.email, signerEmail),
+      ),
+    )
+    .limit(1);
+
+  if (!signer) {
+    return res.status(404).json({ success: false, error: 'Signer not found for this envelope' });
+  }
+
+  if (!signer.signingToken) {
+    return res.status(400).json({ success: false, error: 'No signing token available for this signer' });
+  }
+
+  // Build embedded signing URL
+  const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+  const embedUrl = `${baseUrl}/sign/${signer.signingToken}?embed=true${returnUrl ? `&returnUrl=${encodeURIComponent(returnUrl)}` : ''}`;
+
+  res.json({
+    success: true,
+    data: {
+      url: embedUrl,
+      expiresAt: signer.tokenExpiresAt?.toISOString() || null,
+    },
+  });
+});
+
+// ─── Document Generation / Mail Merge (Step 29) ─────────────────
+
+/**
+ * POST /api/envelopes/generate
+ * Create envelope with merged data from template.
+ */
+router.post('/generate', requireRole('admin', 'sender'), async (req, res) => {
+  const { templateId, mergeData, signers } = req.body;
+
+  if (!templateId || !signers || !Array.isArray(signers)) {
+    return res.status(400).json({
+      success: false,
+      error: 'templateId and signers array are required',
+    });
+  }
+
+  const db = getDb();
+
+  // Get template
+  const [template] = await db.select().from(templates).where(eq(templates.id, templateId)).limit(1);
+
+  if (!template) {
+    return res.status(404).json({ success: false, error: 'Template not found' });
+  }
+
+  try {
+    // Retrieve template document
+    const { retrieveDocument } = await import('../../storage/documentStore.js');
+    const templateDoc = await retrieveDocument(template.documentKey);
+
+    // Merge data if provided
+    let finalDoc = templateDoc;
+    if (mergeData && Object.keys(mergeData).length > 0) {
+      const { mergeFields } = await import('../../documents/mailMerge.js');
+      finalDoc = await mergeFields(templateDoc, mergeData);
+    }
+
+    // Upload merged document
+    const docKey = `generated/${uuidv4()}_${template.name}.pdf`;
+    await uploadDocument(docKey, finalDoc);
+
+    // Create envelope (similar to template instantiation)
+    const organizationId = getOrganizationId(req);
+    const [envelope] = await db
+      .insert(envelopesTable)
+      .values({
+        organizationId,
+        subject: template.name,
+        message: `Generated from template: ${template.name}`,
+        status: 'draft',
+        signingOrder: 'sequential',
+        createdBy: req.user?.id || 'system',
+      })
+      .returning();
+
+    // Create document record
+    const [doc] = await db
+      .insert(documents)
+      .values({
+        envelopeId: envelope.id,
+        filename: `${template.name}.pdf`,
+        contentType: 'application/pdf',
+        storagePath: docKey,
+        documentHash: 'placeholder',
+        order: 0,
+      })
+      .returning();
+
+    // Create signers
+    for (const signerData of signers) {
+      const [signer] = await db
+        .insert(signersTable)
+        .values({
+          envelopeId: envelope.id,
+          name: signerData.name,
+          email: signerData.email,
+          role: signerData.role || 'signer',
+          order: signerData.order || 1,
+          status: 'pending',
+        })
+        .returning();
+
+      // Copy fields from template
+      const templateFields = template.fieldConfig as any[];
+      if (Array.isArray(templateFields)) {
+        for (const fieldConfig of templateFields) {
+          await db.insert(fieldsTable).values({
+            envelopeId: envelope.id,
+            documentId: doc.id,
+            signerId: signer.id,
+            type: fieldConfig.type,
+            page: fieldConfig.page,
+            x: fieldConfig.x,
+            y: fieldConfig.y,
+            width: fieldConfig.width,
+            height: fieldConfig.height,
+            required: fieldConfig.required ?? true,
+            label: fieldConfig.label,
+          });
+        }
+      }
+    }
+
+    res.status(201).json({ success: true, data: { envelopeId: envelope.id } });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: `Failed to generate envelope: ${(error as Error).message}`,
+    });
+  }
+});
+
+/**
+ * POST /api/envelopes/bulk
+ * Bulk send with per-recipient merge data.
+ */
+router.post('/bulk', requireRole('admin', 'sender'), async (req, res) => {
+  const { templateId, recipients } = req.body;
+
+  if (!templateId || !recipients || !Array.isArray(recipients)) {
+    return res.status(400).json({
+      success: false,
+      error: 'templateId and recipients array are required',
+    });
+  }
+
+  try {
+    const { processBulkSend } = await import('../../workflow/bulkSender.js');
+    const organizationId = getOrganizationId(req);
+
+    const result = await processBulkSend(templateId, recipients, {
+      templateId,
+      organizationId,
+    });
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: `Bulk send failed: ${(error as Error).message}`,
+    });
+  }
+});
+
+/**
+ * POST /api/envelopes/bulk/csv
+ * Bulk send from CSV upload.
+ */
+router.post('/bulk/csv', upload.single('csv'), requireRole('admin', 'sender'), async (req, res) => {
+  const { templateId } = req.body;
+  const csvFile = req.file;
+
+  if (!templateId || !csvFile) {
+    return res.status(400).json({
+      success: false,
+      error: 'templateId and CSV file are required',
+    });
+  }
+
+  try {
+    const csvContent = csvFile.buffer.toString('utf8');
+    const { parseCsvForMerge } = await import('../../documents/mailMerge.js');
+
+    const recipients = parseCsvForMerge(csvContent);
+
+    const { processBulkSend } = await import('../../workflow/bulkSender.js');
+    const organizationId = getOrganizationId(req);
+
+    const result = await processBulkSend(templateId, recipients, {
+      templateId,
+      organizationId,
+    });
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: `CSV bulk send failed: ${(error as Error).message}`,
+    });
+  }
+});
+
+/**
+ * GET /api/envelopes/bulk/:batchId/status
+ * Get bulk send batch status.
+ */
+router.get('/bulk/:batchId/status', async (req, res) => {
+  const { batchId } = req.params;
+
+  try {
+    const { getBulkSendStatus } = await import('../../workflow/bulkSender.js');
+    const status = await getBulkSendStatus(batchId);
+
+    res.json({ success: true, data: status });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: `Failed to get bulk status: ${(error as Error).message}`,
+    });
+  }
 });
 
 export default router;

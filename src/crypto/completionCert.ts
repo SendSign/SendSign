@@ -125,10 +125,26 @@ export async function generateCompletionCertificate(
     y = pageHeight - margin;
   };
 
+  // ─── Load Branding Config (Step 32) ───
+  let brandCompanyName = 'CoSeal';
+  let brandTagline = 'Powered by CoSeal — Open Source E-Signature Engine';
+  try {
+    const { getDb } = await import('../db/connection.js');
+    const { brandingConfigs } = await import('../db/schema.js');
+    const db = getDb();
+    const configs = await db.select().from(brandingConfigs).limit(1);
+    if (configs.length > 0 && configs[0].companyName) {
+      brandCompanyName = configs[0].companyName;
+      brandTagline = `Powered by ${brandCompanyName}`;
+    }
+  } catch {
+    // Use defaults if DB not available
+  }
+
   // ─── Header ───
   drawText('CERTIFICATE OF COMPLETION', { font: boldFont, size: 20, color: rgb(0.1, 0.3, 0.6) });
   y -= 5;
-  drawText('Powered by CoSeal — Open Source E-Signature Engine', { size: 8, color: rgb(0.5, 0.5, 0.5) });
+  drawText(brandTagline, { size: 8, color: rgb(0.5, 0.5, 0.5) });
   y -= 10;
   drawLine(2);
   y -= 5;
@@ -287,7 +303,7 @@ export async function generateCompletionCertificate(
   y -= 5;
 
   // ─── Footer ───
-  drawText('CoSeal v1.0.0 — Open Source E-Signature Engine', {
+  drawText(`${brandCompanyName} v1.0.0 — E-Signature Engine`, {
     size: 8,
     color: rgb(0.5, 0.5, 0.5),
   });

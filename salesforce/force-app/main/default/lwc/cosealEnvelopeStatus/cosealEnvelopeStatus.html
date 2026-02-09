@@ -1,0 +1,94 @@
+<template>
+    <lightning-card title="Signing Status" icon-name="standard:task">
+        <div class="slds-p-horizontal_medium">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading status..." size="small"></lightning-spinner>
+            </template>
+
+            <template if:false={hasEnvelope}>
+                <template if:false={isLoading}>
+                    <div class="slds-text-body_regular slds-text-color_weak">
+                        No signing envelopes found for this record.
+                    </div>
+                </template>
+            </template>
+
+            <template if:true={hasEnvelope}>
+                <!-- Progress Bar -->
+                <div class="slds-m-bottom_small">
+                    <lightning-progress-indicator current-step={currentStep} type="path" has-error={isError}>
+                        <lightning-progress-step label="Draft" value="draft"></lightning-progress-step>
+                        <lightning-progress-step label="Sent" value="sent"></lightning-progress-step>
+                        <lightning-progress-step label="In Progress" value="in_progress"></lightning-progress-step>
+                        <lightning-progress-step label="Completed" value="completed"></lightning-progress-step>
+                    </lightning-progress-indicator>
+                </div>
+
+                <!-- Subject -->
+                <div class="slds-m-bottom_small">
+                    <span class="slds-text-title_caps">Subject:</span>
+                    <span class="slds-m-left_x-small">{envelopeSubject}</span>
+                </div>
+
+                <!-- Signers List -->
+                <template if:true={signers}>
+                    <div class="slds-m-bottom_small">
+                        <span class="slds-text-title_caps">Signers:</span>
+                        <ul class="slds-list_dotted slds-m-top_xx-small">
+                            <template for:each={signers} for:item="signer">
+                                <li key={signer.email} class="slds-p-vertical_xx-small">
+                                    <span>{signer.name} ({signer.email})</span>
+                                    <template if:true={signer.isCompleted}>
+                                        <lightning-badge label="Signed" class="slds-m-left_x-small slds-badge_success"></lightning-badge>
+                                    </template>
+                                    <template if:true={signer.isPending}>
+                                        <lightning-badge label="Pending" class="slds-m-left_x-small"></lightning-badge>
+                                        <lightning-button
+                                            label="Remind"
+                                            variant="base"
+                                            icon-name="utility:email"
+                                            onclick={handleRemind}
+                                            data-email={signer.email}
+                                            class="slds-m-left_x-small"
+                                        ></lightning-button>
+                                    </template>
+                                    <template if:true={signer.isDeclined}>
+                                        <lightning-badge label="Declined" class="slds-m-left_x-small slds-badge_error"></lightning-badge>
+                                    </template>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
+                <!-- Actions -->
+                <div class="slds-m-top_small">
+                    <template if:true={isCompleted}>
+                        <lightning-button
+                            label="Download Signed Document"
+                            variant="brand"
+                            icon-name="utility:download"
+                            onclick={handleDownload}
+                        ></lightning-button>
+                    </template>
+                    <template if:true={canVoid}>
+                        <lightning-button
+                            label="Void Envelope"
+                            variant="destructive"
+                            icon-name="utility:close"
+                            onclick={handleVoid}
+                            class="slds-m-left_x-small"
+                        ></lightning-button>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Auto-refresh timer -->
+        <div slot="footer" class="slds-text-body_small slds-text-color_weak">
+            <template if:true={lastRefreshed}>
+                Last updated: {lastRefreshed}
+            </template>
+        </div>
+    </lightning-card>
+</template>

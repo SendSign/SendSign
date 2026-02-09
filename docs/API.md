@@ -1075,6 +1075,246 @@ GET /api/organizations/plans
 
 ---
 
+## Document Generation / Mail Merge
+
+### Generate Envelope from Template with Merge Data
+
+```
+POST /api/envelopes/generate
+```
+
+**Request body:**
+```json
+{
+  "templateId": "uuid",
+  "mergeData": {
+    "client_name": "Acme Corp",
+    "contract_date": "2026-02-08",
+    "amount": "$50,000"
+  },
+  "signers": [
+    {
+      "email": "alice@acme.com",
+      "name": "Alice",
+      "order": 1
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "envelopeId": "uuid"
+  }
+}
+```
+
+Populates template placeholders like `{{client_name}}` with provided data before creating envelope.
+
+### Bulk Send with Per-Recipient Merge Data
+
+```
+POST /api/envelopes/bulk
+```
+
+**Request body:**
+```json
+{
+  "templateId": "uuid",
+  "recipients": [
+    {
+      "email": "alice@acme.com",
+      "name": "Alice",
+      "mergeData": {
+        "client_name": "Acme Corp",
+        "amount": "$50,000"
+      }
+    },
+    {
+      "email": "bob@globex.com",
+      "name": "Bob",
+      "mergeData": {
+        "client_name": "Globex Inc",
+        "amount": "$75,000"
+      }
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "created": 2,
+    "failed": 0,
+    "envelopeIds": ["uuid1", "uuid2"],
+    "errors": [],
+    "batchId": "uuid"
+  }
+}
+```
+
+### Bulk Send from CSV Upload
+
+```
+POST /api/envelopes/bulk/csv
+Content-Type: multipart/form-data
+```
+
+**Form fields:**
+- `templateId`: Template UUID
+- `csv`: CSV file with columns: `email,name,merge_field_1,merge_field_2,...`
+
+**Example CSV:**
+```csv
+email,name,client_name,amount
+alice@acme.com,Alice,Acme Corp,$50000
+bob@globex.com,Bob,Globex Inc,$75000
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "created": 2,
+    "failed": 0,
+    "envelopeIds": ["uuid1", "uuid2"],
+    "errors": [],
+    "batchId": "uuid"
+  }
+}
+```
+
+### Get Bulk Send Status
+
+```
+GET /api/envelopes/bulk/:batchId/status
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 10,
+    "completed": 7,
+    "failed": 1,
+    "inProgress": 2
+  }
+}
+```
+
+---
+
+## Enhanced Analytics
+
+### Get Analytics with Filters
+
+```
+GET /api/admin/analytics?userId=uuid&dateFrom=ISO&dateTo=ISO&groupBy=day
+```
+
+**Query parameters:**
+- `userId` (optional): Filter to specific user
+- `dateFrom` (optional): Start date (ISO 8601)
+- `dateTo` (optional): End date (ISO 8601)
+- `groupBy` (optional): Aggregation level (`day`, `week`, `month`, `user`)
+- `period` (optional): Predefined period (`7d`, `30d`, `90d`, `all`)
+
+**Response:** (same as base analytics endpoint, but filtered)
+
+### Per-User Analytics
+
+```
+GET /api/admin/analytics/users?dateFrom=ISO&dateTo=ISO
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "userId": "uuid",
+      "name": "Alice",
+      "email": "alice@example.com",
+      "sent": 45,
+      "completed": 38,
+      "avgTurnaround": "2.3h"
+    },
+    {
+      "userId": "uuid",
+      "name": "Bob",
+      "email": "bob@example.com",
+      "sent": 23,
+      "completed": 20,
+      "avgTurnaround": "5.1h"
+    }
+  ]
+}
+```
+
+### Per-Template Analytics
+
+```
+GET /api/admin/analytics/templates?dateFrom=ISO&dateTo=ISO
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "templateId": "uuid",
+      "name": "NDA",
+      "timesUsed": 120,
+      "completionRate": "94%",
+      "avgTurnaround": "1.8h"
+    },
+    {
+      "templateId": "uuid",
+      "name": "SOW",
+      "timesUsed": 45,
+      "completionRate": "87%",
+      "avgTurnaround": "8.2h"
+    }
+  ]
+}
+```
+
+### Export Analytics
+
+```
+GET /api/admin/analytics/export?format=csv&type=users
+```
+
+**Query parameters:**
+- `format`: Export format (`csv` or `pdf`)
+- `type`: Export type (`summary`, `users`, `templates`)
+
+**Response:** CSV or PDF file download
+
+**CSV headers (users):**
+```csv
+User ID,Name,Email,Envelopes Sent,Completed,Avg Turnaround
+uuid,Alice,alice@example.com,45,38,2.3h
+```
+
+**CSV headers (templates):**
+```csv
+Template ID,Name,Times Used,Completion Rate,Avg Turnaround
+uuid,NDA,120,94%,1.8h
+```
+
+---
+
 ## SDKs
 
 ### TypeScript / Node.js SDK
@@ -1107,6 +1347,103 @@ await coseal.sendEnvelope(envelope.id);
 ```
 
 See `sdk/README.md` for full documentation.
+
+---
+
+## Embedded Signing (Salesforce / iframe)
+
+### Get Embedded Signing URL
+
+```
+POST /api/envelopes/:id/embedded-signing
+```
+
+**Request body:**
+```json
+{
+  "signerEmail": "alice@example.com",
+  "returnUrl": "https://myorg.salesforce.com/opportunity/001..."
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://coseal.example.com/sign/TOKEN?embed=true&returnUrl=...",
+    "expiresAt": "2026-02-10T12:00:00Z"
+  }
+}
+```
+
+The returned URL can be loaded in an iframe for in-app signing (e.g., within Salesforce, custom portals).
+
+---
+
+## Branding / White-Label
+
+### Get Branding Configuration
+
+```
+GET /api/admin/branding
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "primaryColor": "#2563EB",
+    "secondaryColor": "#1E40AF",
+    "accentColor": "#3B82F6",
+    "companyName": "CoSeal",
+    "emailFooter": null,
+    "signingHeader": null,
+    "logoUrl": null,
+    "faviconUrl": null,
+    "customCss": null,
+    "isDefault": true,
+    "entitlementActive": false
+  }
+}
+```
+
+### Update Branding Configuration
+
+```
+PUT /api/admin/branding
+```
+
+**Requires:** `COSEAL_BRANDING_ENTITLEMENT` environment variable + admin role.
+
+**Request body:**
+```json
+{
+  "primaryColor": "#FF5722",
+  "secondaryColor": "#E64A19",
+  "accentColor": "#FF7043",
+  "companyName": "Acme Corp",
+  "emailFooter": "Powered by Acme Corp e-Signing",
+  "signingHeader": "Welcome to Acme Corp Document Signing",
+  "logoUrl": "https://acme.com/logo.png",
+  "faviconUrl": "https://acme.com/favicon.ico",
+  "customCss": ".header { background: #FF5722; }"
+}
+```
+
+**Validation:**
+- Colors must be valid hex (`#RRGGBB`)
+- Logo data (base64) must be under 500KB
+- Custom CSS is sanitized (no `<script>`, `javascript:`, `expression()`, `@import`)
+
+### Reset Branding
+
+```
+DELETE /api/admin/branding
+```
+
+Resets all branding to CoSeal defaults.
 
 ---
 
