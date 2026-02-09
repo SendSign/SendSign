@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg
+           hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+           transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-white text-gray-700 font-semibold rounded-lg
+           border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+           transition-colors;
+  }
+
+  .field-overlay {
+    @apply absolute border-2 border-blue-400 bg-blue-50/30 rounded cursor-pointer
+           hover:border-blue-600 hover:bg-blue-50/50 transition-all;
+  }
+
+  .field-overlay.completed {
+    @apply border-green-500 bg-green-50/30;
+  }
+
+  .field-overlay.required {
+    @apply border-red-400 bg-red-50/20;
+  }
+
+  .field-error {
+    @apply text-red-600 text-sm mt-1;
+  }
+
+  .field-valid {
+    @apply text-green-600 text-sm mt-1;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+           focus:border-transparent transition-all;
+  }
+
+  .input-field[aria-invalid="true"] {
+    @apply border-red-500 focus:ring-red-500;
+  }
+}
+
+/* ─── Safe area handling for notched devices ─── */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ─── Mobile-specific optimizations ─── */
+@media (max-width: 639px) {
+  /* Larger touch targets */
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent iOS zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Better scrolling on touch */
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Field overlays with larger touch targets */
+  .field-overlay {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ─── Landscape mobile adjustments ─── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .safe-area-top {
+    padding-top: 0;
+  }
+}
+
+/* ─── Touch feedback ─── */
+@media (hover: none) {
+  .btn-primary:active {
+    @apply bg-blue-700;
+    transform: scale(0.98);
+  }
+
+  .btn-secondary:active {
+    @apply bg-gray-100;
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-overlay {
+    animation: none !important;
+  }
+}

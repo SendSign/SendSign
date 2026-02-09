@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signer declined to sign</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .container { background: #ffffff; border-radius: 8px; padding: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1 { color: #dc2626; font-size: 24px; margin-bottom: 20px; }
+    .document-title { font-weight: 600; color: #1a56db; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚫 Signer declined to sign</h1>
+    <p>Hi {{senderName}},</p>
+    <p><strong>{{signerName}}</strong> has declined to sign the document:</p>
+    <p class="document-title">{{documentTitle}}</p>
+    <p><strong>Reason:</strong> {{reason}}</p>
+    <p>You may want to contact the signer to understand their concerns or send a corrected document.</p>
+  </div>
+  <div class="footer">
+    <p>Powered by <strong>CoSeal</strong> — Open Source E-Signature Engine</p>
+  </div>
+</body>
+</html>

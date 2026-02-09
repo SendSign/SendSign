@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "coseal-service": {
+      "type": "http",
+      "url": "${COSEAL_SERVICE_URL:-http://localhost:3000}",
+      "description": "CoSeal signing service — handles document prep, signing ceremony, crypto sealing, and audit trail",
+      "auth": {
+        "type": "bearer",
+        "token": "${COSEAL_API_KEY}"
+      }
+    }
+  }
+}

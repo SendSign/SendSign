@@ -1,0 +1,110 @@
+{{- if .Values.cronJobs.retention.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "coseal.fullname" . }}-retention
+  labels:
+    {{- include "coseal.labels" . | nindent 4 }}
+    app.kubernetes.io/component: retention-processor
+spec:
+  schedule: {{ .Values.cronJobs.retention.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "coseal.serviceAccountName" . }}
+          containers:
+            - name: retention
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              command: ["node", "dist/jobs/retention.js"]
+              envFrom:
+                - configMapRef:
+                    name: {{ include "coseal.fullname" . }}-config
+                - secretRef:
+                    name: {{ include "coseal.fullname" . }}-secret
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          restartPolicy: OnFailure
+---
+{{- end }}
+{{- if .Values.cronJobs.reminders.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "coseal.fullname" . }}-reminders
+  labels:
+    {{- include "coseal.labels" . | nindent 4 }}
+    app.kubernetes.io/component: reminder-processor
+spec:
+  schedule: {{ .Values.cronJobs.reminders.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "coseal.serviceAccountName" . }}
+          containers:
+            - name: reminders
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              command: ["node", "dist/jobs/reminders.js"]
+              envFrom:
+                - configMapRef:
+                    name: {{ include "coseal.fullname" . }}-config
+                - secretRef:
+                    name: {{ include "coseal.fullname" . }}-secret
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          restartPolicy: OnFailure
+---
+{{- end }}
+{{- if .Values.cronJobs.expiry.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "coseal.fullname" . }}-expiry
+  labels:
+    {{- include "coseal.labels" . | nindent 4 }}
+    app.kubernetes.io/component: expiry-processor
+spec:
+  schedule: {{ .Values.cronJobs.expiry.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "coseal.serviceAccountName" . }}
+          containers:
+            - name: expiry
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              command: ["node", "dist/jobs/expiry.js"]
+              envFrom:
+                - configMapRef:
+                    name: {{ include "coseal.fullname" . }}-config
+                - secretRef:
+                    name: {{ include "coseal.fullname" . }}-secret
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          restartPolicy: OnFailure
+{{- end }}

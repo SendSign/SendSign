@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: coseal
+  labels:
+    app.kubernetes.io/name: coseal
+    app.kubernetes.io/part-of: coseal
