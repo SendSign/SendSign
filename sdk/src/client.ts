@@ -200,6 +200,65 @@ export class CoSealClient {
     return this.request<Envelope>('POST', `/api/templates/${templateId}/use`, { signers });
   }
 
+  // ─── Reminders ──────────────────────────────────────────────────
+
+  /**
+   * Send reminders to pending signers. Regenerates expired tokens.
+   */
+  async sendReminder(envelopeId: string): Promise<{ resent: number }> {
+    return this.request<{ resent: number }>('POST', `/api/envelopes/${envelopeId}/resend`);
+  }
+
+  // ─── Bulk Operations ───────────────────────────────────────────
+
+  /**
+   * Bulk send envelopes using a template and recipient list.
+   */
+  async bulkSend(params: {
+    templateId: string;
+    recipients: Array<{ name: string; email: string; mergeData?: Record<string, string> }>;
+  }): Promise<{ batchId: string; created: number; failed: number }> {
+    return this.request<{ batchId: string; created: number; failed: number }>('POST', '/api/envelopes/bulk', params);
+  }
+
+  /**
+   * Check the status of a bulk send batch.
+   */
+  async getBulkStatus(batchId: string): Promise<{ total: number; sent: number; failed: number; envelopes: Array<{ id: string; status: string }> }> {
+    return this.request('GET', `/api/envelopes/bulk/${batchId}/status`);
+  }
+
+  /**
+   * Generate an envelope from a template with merge data.
+   */
+  async generateFromTemplate(params: {
+    templateId: string;
+    mergeData: Record<string, string>;
+    signers: SignerInput[];
+  }): Promise<Envelope> {
+    return this.request<Envelope>('POST', '/api/envelopes/generate', params);
+  }
+
+  // ─── Auto-placement ────────────────────────────────────────────
+
+  /**
+   * Automatically place signature fields on a document.
+   * Designed for AI/programmatic use.
+   */
+  async autoPlaceFields(envelopeId: string): Promise<{ fieldsPlaced: number; page: number }> {
+    return this.request<{ fieldsPlaced: number; page: number }>('POST', `/api/envelopes/${envelopeId}/auto-place-fields`);
+  }
+
+  // ─── Analytics ─────────────────────────────────────────────────
+
+  /**
+   * Get signing analytics and statistics.
+   */
+  async getAnalytics(period?: string): Promise<Record<string, unknown>> {
+    const query = period ? `?period=${encodeURIComponent(period)}` : '';
+    return this.request<Record<string, unknown>>('GET', `/api/admin/analytics${query}`);
+  }
+
   // ─── Audit ────────────────────────────────────────────────────────
 
   /**

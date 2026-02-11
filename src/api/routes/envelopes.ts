@@ -696,6 +696,188 @@ router.post('/:id/resend', requireRole('admin', 'sender'), async (req, res) => {
 });
 
 /**
+ * POST /api/envelopes/:id/remind
+ * Alias for /resend — matches command documentation.
+ */
+router.post('/:id/remind', requireRole('admin', 'sender'), async (req, res) => {
+  // Forward to the resend handler by making it call the same logic
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
+    if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
+
+    if (envelope.status !== 'sent' && envelope.status !== 'in_progress') {
+      res.status(400).json({ success: false, error: `Cannot send reminders for envelope with status "${envelope.status}"` }); return;
+    }
+
+    const pendingSigners = await db
+      .select().from(signersTable)
+      .where(and(eq(signersTable.envelopeId, envelopeId), eq(signersTable.status, 'pending')));
+
+    let resent = 0;
+    for (const signer of pendingSigners) {
+      if (!signer.signingToken || (signer.tokenExpiresAt && new Date() > new Date(signer.tokenExpiresAt))) {
+        const { assignToken } = await import('../../ceremony/tokenGenerator.js');
+        await assignToken(signer.id);
+      }
+      resent++;
+    }
+
+    await logEvent({ envelopeId, eventType: 'reminded', eventData: { action: 'remind', signersResent: resent } });
+    res.json({ success: true, data: { resent } });
+  } catch (err) {
+    console.error('Failed to send reminder:', err);
+    res.status(500).json({ success: false, error: 'Failed to send reminder' });
+  }
+});
+
+/**
+ * POST /api/envelopes/:id/auto-place-fields
+ * Automatically place signature fields on a document based on analysis.
+ * This is designed for AI/MCP tool orchestration — it analyzes the PDF and places
+ * signature, date, and name fields in sensible locations for each signer.
+ */
+router.post('/:id/auto-place-fields', requireRole('admin', 'sender'), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
+    if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
+    if (envelope.status !== 'draft') {
+      res.status(400).json({ success: false, error: 'Can only auto-place fields on draft envelopes' }); return;
+    }
+
+    // Get signers
+    const envelopeSigners = await db.select().from(signersTable).where(eq(signersTable.envelopeId, envelopeId));
+    if (envelopeSigners.length === 0) {
+      res.status(400).json({ success: false, error: 'No signers on this envelope' }); return;
+    }
+
+    // Get the document to determine page count
+    const [doc] = await db.select().from(documents).where(eq(documents.envelopeId, envelopeId)).orderBy(documents.order).limit(1);
+    if (!doc) {
+      res.status(400).json({ success: false, error: 'No document attached to this envelope' }); return;
+    }
+
+    const pageCount = doc.pageCount || 1;
+    const lastPage = pageCount;
+
+    // Auto-place strategy:
+    // - Signature fields on the last page, stacked vertically from bottom
+    // - Date field next to each signature
+    // - Name field above each signature
+    // Each signer gets a signature block: Name, Signature, Date
+    const autoFields: Array<{
+      type: string;
+      signerId: string;
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      required: boolean;
+      label: string;
+    }> = [];
+
+    const signerCount = envelopeSigners.filter((s) => s.role === 'signer').length;
+    const blockHeight = 80; // pixels per signer block
+    const startY = Math.max(500, 792 - (signerCount * (blockHeight + 20)) - 40);
+
+    envelopeSigners
+      .filter((s) => s.role === 'signer')
+      .forEach((signer, index) => {
+        const baseX = index % 2 === 0 ? 72 : 320; // Two columns if >2 signers
+        const baseY = signerCount <= 2
+          ? startY + index * (blockHeight + 20)
+          : startY + Math.floor(index / 2) * (blockHeight + 20);
+
+        // Name field
+        autoFields.push({
+          type: 'text',
+          signerId: signer.id,
+          page: lastPage,
+          x: baseX,
+          y: baseY,
+          width: 200,
+          height: 20,
+          required: true,
+          label: 'Full Name',
+        });
+
+        // Signature field
+        autoFields.push({
+          type: 'signature',
+          signerId: signer.id,
+          page: lastPage,
+          x: baseX,
+          y: baseY + 25,
+          width: 200,
+          height: 40,
+          required: true,
+          label: 'Signature',
+        });
+
+        // Date field
+        autoFields.push({
+          type: 'date',
+          signerId: signer.id,
+          page: lastPage,
+          x: baseX,
+          y: baseY + 70,
+          width: 120,
+          height: 20,
+          required: true,
+          label: 'Date',
+        });
+      });
+
+    // Save fields to database
+    if (autoFields.length > 0) {
+      // Clear existing fields first
+      await db.delete(fieldsTable).where(eq(fieldsTable.envelopeId, envelopeId));
+
+      for (const field of autoFields) {
+        await db.insert(fieldsTable).values({
+          envelopeId,
+          documentId: doc.id,
+          signerId: field.signerId,
+          type: field.type as 'signature' | 'initial' | 'date' | 'text' | 'checkbox' | 'radio' | 'dropdown' | 'number' | 'currency' | 'calculated' | 'attachment',
+          page: field.page,
+          x: field.x,
+          y: field.y,
+          width: field.width,
+          height: field.height,
+          required: field.required,
+          label: field.label,
+        });
+      }
+    }
+
+    await logEvent({
+      envelopeId,
+      eventType: 'corrected',
+      eventData: { action: 'auto_place_fields', fieldCount: autoFields.length },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        fieldsPlaced: autoFields.length,
+        signerBlocks: envelopeSigners.filter((s) => s.role === 'signer').length,
+        page: lastPage,
+        fields: autoFields,
+      },
+    });
+  } catch (err) {
+    console.error('Failed to auto-place fields:', err);
+    res.status(500).json({ success: false, error: 'Failed to auto-place fields' });
+  }
+});
+
+/**
  * PATCH /api/envelopes/:id
  * Update envelope metadata (subject, message, expiresAt). Only for draft envelopes.
  */

@@ -168,3 +168,182 @@ export async function voidEnvelope(
 ): Promise<ApiResponse> {
   return request('POST', `/api/envelopes/${envelopeId}/void`, { reason });
 }
+
+/**
+ * Download the signed/sealed document (returns URL to download).
+ */
+export async function downloadSigned(
+  envelopeId: string,
+): Promise<ApiResponse<{ url: string }>> {
+  // Return the download URL rather than binary data (MCP tools return text)
+  const baseUrl = API_URL;
+  return {
+    success: true,
+    data: {
+      url: `${baseUrl}/api/envelopes/${envelopeId}/signed-document`,
+    },
+  };
+}
+
+/**
+ * Download the completion certificate (returns URL to download).
+ */
+export async function downloadCertificate(
+  envelopeId: string,
+): Promise<ApiResponse<{ url: string }>> {
+  const baseUrl = API_URL;
+  return {
+    success: true,
+    data: {
+      url: `${baseUrl}/api/envelopes/${envelopeId}/certificate`,
+    },
+  };
+}
+
+/**
+ * Send a reminder to pending signers.
+ */
+export async function sendReminder(
+  envelopeId: string,
+): Promise<ApiResponse<{ resent: number }>> {
+  return request('POST', `/api/envelopes/${envelopeId}/resend`);
+}
+
+/**
+ * Get audit trail for an envelope.
+ */
+export async function getAuditTrail(
+  envelopeId: string,
+): Promise<ApiResponse> {
+  return request('GET', `/api/envelopes/${envelopeId}/audit`);
+}
+
+/**
+ * Create a template.
+ */
+export async function createTemplate(params: {
+  name: string;
+  description?: string;
+  signerRoles: Array<{ role: string; order: number }>;
+}): Promise<ApiResponse> {
+  return request('POST', '/api/templates', params);
+}
+
+/**
+ * List templates.
+ */
+export async function listTemplates(): Promise<ApiResponse> {
+  return request('GET', '/api/templates');
+}
+
+/**
+ * Use a template to create an envelope.
+ */
+export async function useTemplate(
+  templateId: string,
+  signers: Array<{ name: string; email: string; role?: string }>,
+): Promise<ApiResponse> {
+  return request('POST', `/api/templates/${templateId}/use`, { signers });
+}
+
+/**
+ * Bulk send envelopes.
+ */
+export async function bulkSend(params: {
+  templateId: string;
+  recipients: Array<{ name: string; email: string; mergeData?: Record<string, string> }>;
+}): Promise<ApiResponse> {
+  return request('POST', '/api/envelopes/bulk', params);
+}
+
+/**
+ * Get analytics.
+ */
+export async function getAnalytics(
+  period?: string,
+): Promise<ApiResponse> {
+  const query = period ? `?period=${encodeURIComponent(period)}` : '';
+  return request('GET', `/api/admin/analytics${query}`);
+}
+
+/**
+ * Get retention policies.
+ */
+export async function getRetentionPolicies(): Promise<ApiResponse> {
+  return request('GET', '/api/retention/policies');
+}
+
+/**
+ * Assign retention policy to an envelope.
+ */
+export async function assignRetention(
+  envelopeId: string,
+  policyId: string,
+): Promise<ApiResponse> {
+  return request('POST', `/api/envelopes/${envelopeId}/retention`, { policyId });
+}
+
+/**
+ * Get expiring documents.
+ */
+export async function getExpiringDocuments(
+  days?: number,
+): Promise<ApiResponse> {
+  const query = days ? `?days=${days}` : '';
+  return request('GET', `/api/retention/expiring${query}`);
+}
+
+/**
+ * Register a webhook.
+ */
+export async function registerWebhook(
+  url: string,
+  events: string[],
+): Promise<ApiResponse> {
+  return request('POST', '/api/webhooks', { url, events });
+}
+
+/**
+ * List webhooks.
+ */
+export async function listWebhooks(): Promise<ApiResponse> {
+  return request('GET', '/api/webhooks');
+}
+
+/**
+ * Delete a webhook.
+ */
+export async function deleteWebhook(id: string): Promise<ApiResponse> {
+  return request('DELETE', `/api/webhooks/${id}`);
+}
+
+/**
+ * Create envelope from Legal plugin output — the handoff tool.
+ * Accepts review context and auto-creates an envelope with sensible defaults.
+ */
+export async function createFromLegalReview(params: {
+  subject: string;
+  message?: string;
+  parties: Array<{ name: string; email: string; role?: string }>;
+  filePath?: string;
+  reviewNotes?: string;
+}): Promise<ApiResponse<EnvelopeSummary>> {
+  const { subject, message, parties, filePath, reviewNotes } = params;
+
+  // Build signers from parties
+  const signers: Signer[] = parties.map((p, i) => ({
+    name: p.name,
+    email: p.email,
+    role: p.role || 'signer',
+    order: i + 1,
+  }));
+
+  // Create envelope with document if provided
+  return createEnvelope({
+    subject,
+    message: message || (reviewNotes ? `Legal review notes: ${reviewNotes}` : undefined),
+    signingOrder: 'sequential',
+    signers,
+    filePath,
+  });
+}

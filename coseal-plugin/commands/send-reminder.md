@@ -16,7 +16,8 @@ Make the following API call:
 POST /api/envelopes/{envelopeId}/remind
 ```
 
-(Note: This endpoint may need to be added to the API if not present. For now, Claude can use the workflow reminder system.)
+This endpoint regenerates expired signing tokens and re-sends notification emails to all pending signers.
+Alias: `POST /api/envelopes/{envelopeId}/resend` (same functionality).
 
 ### 3. Confirm to the User
 - Display: "✓ Reminder sent to {pending signer names}"

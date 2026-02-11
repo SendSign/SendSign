@@ -210,6 +210,10 @@ export async function sendEnvelope(envelopeId: string): Promise<void> {
   // Dispatch to integrations
   const { integrationRegistry } = await import('../integrations/registry.js');
   await integrationRegistry.dispatchEvent('envelopeSent', { envelope });
+
+  // Dispatch to webhooks
+  const { dispatch: dispatchWebhook } = await import('../notifications/webhookDispatcher.js');
+  await dispatchWebhook('envelope.sent', { envelopeId, subject: envelope.subject, signerCount: envelopeSigners.length });
 }
 
 /**
@@ -245,6 +249,10 @@ export async function voidEnvelope(
   // Dispatch to integrations
   const { integrationRegistry } = await import('../integrations/registry.js');
   await integrationRegistry.dispatchEvent('envelopeVoided', { envelope });
+
+  // Dispatch to webhooks
+  const { dispatch: dispatchWebhook } = await import('../notifications/webhookDispatcher.js');
+  await dispatchWebhook('envelope.voided', { envelopeId, subject: envelope.subject, reason });
 }
 
 /**
@@ -299,6 +307,10 @@ export async function completeEnvelope(envelopeId: string): Promise<void> {
     const { integrationRegistry } = await import('../integrations/registry.js');
     await integrationRegistry.dispatchEvent('envelopeCompleted', { envelope: fullEnvelope as any });
   }
+
+  // Dispatch to webhooks
+  const { dispatch: dispatchWebhook } = await import('../notifications/webhookDispatcher.js');
+  await dispatchWebhook('envelope.completed', { envelopeId, subject: fullEnvelope?.subject });
 }
 
 /**

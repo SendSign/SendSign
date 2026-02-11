@@ -213,6 +213,12 @@ router.post('/:token', validate(signFieldSchema), async (req, res) => {
     eventData: { fieldCount: req.body.fields.length },
   });
 
+  // Dispatch webhook for signer completed
+  try {
+    const { dispatch: dispatchWebhook } = await import('../../notifications/webhookDispatcher.js');
+    await dispatchWebhook('signer.completed', { envelopeId, signerId, signerName: tokenResult.signer!.name, signerEmail: tokenResult.signer!.email });
+  } catch { /* non-critical */ }
+
   // Check if all signers have completed — if so, seal the envelope
   const allSigners = await db.select().from(signers).where(eq(signers.envelopeId, envelopeId));
   const allComplete = allSigners.every((s) => s.status === 'completed' || s.role !== 'signer');
@@ -282,6 +288,12 @@ router.post('/:token/decline', async (req, res) => {
     ipAddress: (req.ip || req.headers['x-forwarded-for'] || '') as string,
     userAgent: req.headers['user-agent'] || '',
   });
+
+  // Dispatch webhook for signer declined
+  try {
+    const { dispatch: dispatchWebhook } = await import('../../notifications/webhookDispatcher.js');
+    await dispatchWebhook('signer.declined', { envelopeId, signerId, signerName: tokenResult.signer!.name, reason });
+  } catch { /* non-critical */ }
 
   // Void the entire envelope when a signer declines
   try {
