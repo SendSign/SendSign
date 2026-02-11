@@ -245,6 +245,62 @@ router.post('/:token', validate(signFieldSchema), async (req, res) => {
 });
 
 /**
+ * POST /api/sign/:token/decline
+ * Decline to sign a document.
+ */
+router.post('/:token/decline', async (req, res) => {
+  const token = typeof req.params.token === 'string' ? req.params.token : req.params.token[0];
+  const tokenResult = await validateToken(token);
+
+  if (!tokenResult.valid) {
+    res.status(401).json({ success: false, error: tokenResult.reason });
+    return;
+  }
+
+  const db = getDb();
+  const signerId = tokenResult.signer!.id;
+  const envelopeId = tokenResult.signer!.envelopeId;
+  const reason = req.body?.reason || 'No reason provided';
+
+  // Update signer status to declined
+  await db
+    .update(signers)
+    .set({
+      status: 'declined',
+      declinedReason: reason,
+      signingToken: null,
+      tokenExpiresAt: null,
+    })
+    .where(eq(signers.id, signerId));
+
+  // Log audit event
+  await logEvent({
+    envelopeId,
+    signerId,
+    eventType: 'declined',
+    eventData: { reason },
+    ipAddress: (req.ip || req.headers['x-forwarded-for'] || '') as string,
+    userAgent: req.headers['user-agent'] || '',
+  });
+
+  // Void the entire envelope when a signer declines
+  try {
+    const { voidEnvelope } = await import('../../workflow/envelopeManager.js');
+    await voidEnvelope(envelopeId, `Declined by ${tokenResult.signer!.name}: ${reason}`);
+  } catch {
+    // Non-critical — status may already be void
+  }
+
+  res.json({
+    success: true,
+    data: {
+      declined: true,
+      message: 'You have declined to sign this document. The sender has been notified.',
+    },
+  });
+});
+
+/**
  * POST /api/sign/:token/consent
  * Record e-signature consent
  */

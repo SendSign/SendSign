@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
+import { PrivacyFooter } from '../components/PrivacyFooter';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -194,12 +195,9 @@ export function LoginPage() {
           </Link>
         </p>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-            <span className="font-medium">Powered by</span>
-            <img src="/sendsign-logo.svg" alt="SendSign" className="h-5 w-auto inline-block" />
-          </div>
+        {/* Footer with privacy links */}
+        <div className="mt-6">
+          <PrivacyFooter />
         </div>
       </div>
     </div>

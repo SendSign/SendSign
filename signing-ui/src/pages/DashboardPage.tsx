@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, Send, Clock, CheckCircle2, XCircle, Plus,
-  Search, Filter, MoreHorizontal, Eye, Trash2, Copy,
+  Search, Filter, MoreHorizontal, Eye, Trash2,
   ChevronDown, LayoutTemplate, RefreshCw,
-  AlertCircle, Mail, Download, FileCheck, Upload, X, LogOut,
+  AlertCircle, Mail, Download, FileCheck, Upload, X, LogOut, Settings,
 } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -112,6 +112,9 @@ export function DashboardPage() {
   const [voiding, setVoiding] = useState(false);
   const [resending, setResending] = useState<string | null>(null);
   const [actionToast, setActionToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [auditEnvelope, setAuditEnvelope] = useState<Envelope | null>(null);
+  const [auditEvents, setAuditEvents] = useState<Array<{ id: string; eventType: string; createdAt: string; signerName: string | null; signerEmail: string | null; eventData: unknown; ipAddress: string | null; geolocation: string | null }>>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   // Fetch data
   const fetchEnvelopes = useCallback(async () => {
@@ -235,13 +238,13 @@ export function DashboardPage() {
     setResending(env.id);
     setActionMenuId(null);
     try {
-      const res = await fetch(`/api/envelopes/${env.id}/send`, {
+      const res = await fetch(`/api/envelopes/${env.id}/resend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
       });
       const data = await res.json();
       if (data.success) {
-        setActionToast({ message: `Notifications resent for "${env.subject}"`, type: 'success' });
+        setActionToast({ message: `Notifications resent for "${env.subject}" (${data.data?.resent || 0} signers)`, type: 'success' });
       } else {
         setActionToast({ message: data.error || 'Failed to resend', type: 'error' });
       }
@@ -251,6 +254,41 @@ export function DashboardPage() {
       setResending(null);
     }
   };
+
+  // Delete envelope
+  const handleDelete = async (env: Envelope) => {
+    setActionMenuId(null);
+    if (!confirm(`Delete "${env.subject}"? This cannot be undone.`)) return;
+
+    try {
+      const res = await fetch(`/api/envelopes/${env.id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionToast({ message: `"${env.subject}" deleted`, type: 'success' });
+        loadData();
+      } else {
+        setActionToast({ message: data.error || 'Failed to delete', type: 'error' });
+      }
+    } catch {
+      setActionToast({ message: 'Unable to connect to server', type: 'error' });
+    }
+  };
+
+  // Fetch audit trail when envelope selected
+  useEffect(() => {
+    if (!auditEnvelope) return;
+    setAuditLoading(true);
+    fetch(`/api/envelopes/${auditEnvelope.id}/audit`, { headers: authHeaders() })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setAuditEvents(data.data.events);
+      })
+      .catch(() => {})
+      .finally(() => setAuditLoading(false));
+  }, [auditEnvelope]);
 
   // Stats
   const stats = useMemo(() => {
@@ -382,16 +420,29 @@ export function DashboardPage() {
                 New Envelope
               </button>
 
-              {/* User / Logout */}
-              <div className="flex items-center gap-2 pl-2 border-l-2 border-gray-200">
+              {/* User / Profile / Logout */}
+              <div className="flex items-center gap-1 pl-2 border-l-2 border-gray-200">
                 {(() => {
                   try {
                     const u = JSON.parse(localStorage.getItem('sendsign_user') || '{}');
                     return u.name ? (
-                      <span className="text-xs font-semibold text-gray-600 hidden sm:block">{u.name}</span>
+                      <button
+                        onClick={() => navigate('/profile')}
+                        className="text-xs font-semibold text-gray-600 hover:text-blue-600 hidden sm:block px-1 py-1 rounded transition-colors"
+                        title="Account settings"
+                      >
+                        {u.name}
+                      </button>
                     ) : null;
                   } catch { return null; }
                 })()}
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                  title="Account settings"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => {
                     localStorage.removeItem('sendsign_token');
@@ -470,8 +521,50 @@ export function DashboardPage() {
                         </span>
                       )}
                       <span className="text-xs text-gray-500 font-medium">{formatDate(t.createdAt)}</span>
-                      <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all opacity-0 group-hover:opacity-100">
-                        <Copy className="w-3.5 h-3.5" />
+                      {/* Use template */}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const form = new FormData();
+                            form.append('subject', `From template: ${t.name}`);
+                            form.append('templateId', t.id);
+                            const res = await fetch('/api/envelopes', { method: 'POST', headers: authHeaders(), body: form });
+                            const data = await res.json();
+                            if (data.success) {
+                              navigate(`/prepare/${data.data.id}`);
+                            } else {
+                              setActionToast({ message: data.error || 'Failed to create envelope', type: 'error' });
+                            }
+                          } catch {
+                            setActionToast({ message: 'Failed to create envelope from template', type: 'error' });
+                          }
+                        }}
+                        className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-all opacity-0 group-hover:opacity-100"
+                        title="Use this template"
+                      >
+                        Use
+                      </button>
+                      {/* Delete template */}
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Delete template "${t.name}"?`)) return;
+                          try {
+                            const res = await fetch(`/api/templates/${t.id}`, { method: 'DELETE', headers: authHeaders() });
+                            const data = await res.json();
+                            if (data.success) {
+                              setActionToast({ message: `Template "${t.name}" deleted`, type: 'success' });
+                              loadData();
+                            } else {
+                              setActionToast({ message: data.error || 'Failed to delete template', type: 'error' });
+                            }
+                          } catch {
+                            setActionToast({ message: 'Failed to delete template', type: 'error' });
+                          }
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete template"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -609,15 +702,18 @@ export function DashboardPage() {
                             )}
                             {env.status === 'completed' && (
                               <ActionMenuItem icon={FileCheck} label="Audit Certificate" onClick={() => {
-                                window.open(`/api/envelopes/${env.id}/completion-certificate`, '_blank');
+                                window.open(`/api/envelopes/${env.id}/certificate`, '_blank');
                                 setActionMenuId(null);
                               }} />
+                            )}
+                            {env.status !== 'draft' && (
+                              <ActionMenuItem icon={Clock} label="Audit Trail" onClick={() => { setAuditEnvelope(env); setActionMenuId(null); }} />
                             )}
                             {(env.status === 'sent' || env.status === 'in_progress') && (
                               <ActionMenuItem icon={Mail} label={resending === env.id ? 'Sending...' : 'Resend Notification'} onClick={() => handleResend(env)} />
                             )}
-                            {env.status === 'draft' && (
-                              <ActionMenuItem icon={Trash2} label="Delete" onClick={() => {}} danger />
+                            {(env.status === 'draft' || env.status === 'voided') && (
+                              <ActionMenuItem icon={Trash2} label="Delete" onClick={() => handleDelete(env)} danger />
                             )}
                             {(env.status === 'sent' || env.status === 'in_progress') && (
                               <ActionMenuItem icon={XCircle} label="Void" onClick={() => { setVoidConfirm(env); setActionMenuId(null); }} danger />
@@ -954,6 +1050,66 @@ export function DashboardPage() {
               >
                 {creating ? 'Creating...' : 'Create & Prepare'}
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* ═══ Audit Trail Modal ═══ */}
+      {auditEnvelope && createPortal(
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setAuditEnvelope(null)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Audit Trail</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{auditEnvelope.subject || 'Untitled'}</p>
+              </div>
+              <button onClick={() => setAuditEnvelope(null)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto px-6 py-4">
+              {auditLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                </div>
+              ) : auditEvents.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-12">No audit events recorded</p>
+              ) : (
+                <div className="relative">
+                  <div className="absolute left-3 top-2 bottom-2 w-px bg-gray-200" />
+                  <div className="space-y-4">
+                    {auditEvents.map((event) => (
+                      <div key={event.id} className="flex gap-4 relative">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white shadow-sm flex items-center justify-center shrink-0 z-10">
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        </div>
+                        <div className="flex-1 pb-1">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-gray-900 capitalize">
+                              {event.eventType.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              {new Date(event.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                          {event.signerName && (
+                            <p className="text-xs text-gray-600 mt-0.5">
+                              {event.signerName} {event.signerEmail ? `(${event.signerEmail})` : ''}
+                            </p>
+                          )}
+                          {event.ipAddress && (
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              IP: {event.ipAddress}{event.geolocation ? ` — ${event.geolocation}` : ''}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>,

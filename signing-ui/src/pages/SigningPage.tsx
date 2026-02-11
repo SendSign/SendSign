@@ -38,6 +38,9 @@ export function SigningPage() {
   const [delegating, setDelegating] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [declining, setDeclining] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -162,7 +165,30 @@ export function SigningPage() {
   };
 
   const handleConsentDecline = () => {
-    navigate('/expired?reason=consent_declined');
+    setShowConsentModal(false);
+    setShowDeclineModal(true);
+  };
+
+  const handleDecline = async () => {
+    if (!token) return;
+    setDeclining(true);
+    try {
+      const res = await fetch(`/api/sign/${token}/decline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: declineReason.trim() || 'No reason provided' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        navigate('/expired?reason=declined');
+      } else {
+        setError(data.error || 'Failed to decline');
+      }
+    } catch {
+      setError('Unable to connect to the server');
+    } finally {
+      setDeclining(false);
+    }
   };
 
   // Navigate to a specific field
@@ -257,6 +283,14 @@ export function SigningPage() {
             title="Comments"
           >
             <MessageSquare className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => setShowDeclineModal(true)}
+            className="text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 text-red-500 border border-red-200 rounded-lg hover:bg-red-50 font-medium transition-colors"
+            aria-label="Decline to sign"
+          >
+            Decline
           </button>
 
           <button
@@ -465,6 +499,44 @@ export function SigningPage() {
           onClose={() => setShowComments(false)}
           filterFieldId={commentFilterField}
         />
+      )}
+
+      {/* Decline Modal */}
+      {showDeclineModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Decline to Sign</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to decline? The sender will be notified and the signing process will be cancelled for all parties.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Reason (optional)</label>
+              <textarea
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder="Let the sender know why you're declining..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-400 resize-none"
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeclineModal(false); setDeclineReason(''); }}
+                disabled={declining}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDecline}
+                disabled={declining}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {declining ? 'Declining...' : 'Decline to Sign'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Consent Modal */}

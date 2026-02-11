@@ -1,15 +1,83 @@
+import crypto from 'crypto';
 import { eq, desc } from 'drizzle-orm';
 import { getDb } from '../db/connection.js';
 import { auditEvents } from '../db/schema.js';
 import type { AuditEvent, CreateAuditEvent } from './eventTypes.js';
 
 /**
- * Log an audit event to the database.
+ * Compute a SHA-256 hash of the event data for the tamper-proof chain.
+ */
+function computeEventHash(event: {
+  envelopeId: string;
+  signerId?: string;
+  eventType: string;
+  eventData?: Record<string, unknown>;
+  ipAddress?: string;
+  previousHash?: string;
+}): string {
+  const payload = JSON.stringify({
+    envelopeId: event.envelopeId,
+    signerId: event.signerId || null,
+    eventType: event.eventType,
+    eventData: event.eventData || {},
+    ipAddress: event.ipAddress || null,
+    previousHash: event.previousHash || null,
+    timestamp: Date.now(),
+  });
+  return crypto.createHash('sha256').update(payload).digest('hex');
+}
+
+/**
+ * Resolve IP to approximate geolocation (country/region).
+ * Uses geoip-lite for offline lookup — no external API calls.
+ */
+async function resolveGeolocation(ip: string | undefined): Promise<string | null> {
+  if (!ip) return null;
+  try {
+    // Dynamically import geoip-lite (it has a large dataset loaded at import)
+    const geoip = await import('geoip-lite');
+    // Strip IPv6 prefix if present
+    const cleanIp = ip.replace(/^::ffff:/, '');
+    const geo = geoip.default.lookup(cleanIp);
+    if (geo) {
+      return `${geo.city || 'Unknown'}, ${geo.region || ''}, ${geo.country}`.replace(/, ,/g, ',').replace(/^, /, '');
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Log an audit event to the database with hash chain and geolocation.
  * This function never throws — if logging fails, it logs to stderr and returns a fallback event.
  */
 export async function logEvent(event: CreateAuditEvent): Promise<AuditEvent> {
   try {
     const db = getDb();
+
+    // Get the hash of the most recent event for this envelope (hash chain)
+    let previousHash: string | null = null;
+    try {
+      const [lastEvent] = await db
+        .select({ eventHash: auditEvents.eventHash })
+        .from(auditEvents)
+        .where(eq(auditEvents.envelopeId, event.envelopeId))
+        .orderBy(desc(auditEvents.createdAt))
+        .limit(1);
+      previousHash = lastEvent?.eventHash ?? null;
+    } catch {
+      // Non-critical — proceed without chain
+    }
+
+    // Compute the hash for this event
+    const eventHash = computeEventHash({
+      ...event,
+      previousHash: previousHash ?? undefined,
+    });
+
+    // Resolve geolocation from IP
+    const geolocation = await resolveGeolocation(event.ipAddress);
 
     const [inserted] = await db
       .insert(auditEvents)
@@ -20,6 +88,9 @@ export async function logEvent(event: CreateAuditEvent): Promise<AuditEvent> {
         eventData: event.eventData,
         ipAddress: event.ipAddress,
         userAgent: event.userAgent,
+        geolocation,
+        eventHash,
+        previousHash,
       })
       .returning();
 

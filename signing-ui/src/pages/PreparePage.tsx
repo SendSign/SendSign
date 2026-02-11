@@ -4,7 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PDFViewer } from '../components/PDFViewer';
 import {
   PenLine, PenTool, Calendar, User, Mail, Building2, Briefcase,
-  Type, CheckSquare, ArrowRight, Plus, X, Trash2, ArrowLeft, ChevronLeft, Save, FileX,
+  Type, CheckSquare, ArrowRight, Plus, X, Trash2, ChevronLeft, Save, FileX,
+  Pencil, UserMinus, AlertTriangle, ArrowLeft,
 } from 'lucide-react';
 import type { FieldType } from '../types/index';
 
@@ -230,11 +231,15 @@ export function PreparePage() {
   // Popover state
   const [popover, setPopover] = useState<{ fieldId: string; x: number; y: number } | null>(null);
 
-  // Add signer modal
+  // Add/edit signer modal
   const [showAddSigner, setShowAddSigner] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [newSignerName, setNewSignerName] = useState('');
   const [newSignerEmail, setNewSignerEmail] = useState('');
+  // Edit signer
+  const [editingSignerId, setEditingSignerId] = useState<string | null>(null);
+  const [editSignerName, setEditSignerName] = useState('');
+  const [editSignerEmail, setEditSignerEmail] = useState('');
 
   // Drag state from palette
   const dragInfo = useRef<typeof FIELD_PALETTE[number] | null>(null);
@@ -442,6 +447,7 @@ export function PreparePage() {
 
   // ── Send ──────────────────────────────────────────────────────────
   const readyToSend = useMemo(() => {
+    if (signers.length === 0) return false;
     if (fields.length === 0) return false;
     const signersNeedingSig = signers.filter((s) => s.role === 'signer');
     const signersWithSig = new Set(fields.filter((f) => f.type === 'signature').map((f) => f.signerId));
@@ -450,6 +456,12 @@ export function PreparePage() {
 
   const handleSend = async () => {
     if (!envelopeId) return;
+
+    // Validate at least one signer
+    if (signers.length === 0) {
+      showToast('Add at least one recipient before sending', 'error');
+      return;
+    }
 
     // Validation with toast
     const signersNeedingSig = signers.filter((s) => s.role === 'signer');
@@ -527,6 +539,82 @@ export function PreparePage() {
       showToast(`${newSigner.name} added as recipient`, 'success');
     } catch {
       showToast('Unable to add recipient', 'error');
+    }
+  };
+
+  // ── Delete signer ──────────────────────────────────────────────────
+  const handleDeleteSigner = async (signerId: string) => {
+    if (signers.length <= 1) {
+      showToast('Cannot remove the last recipient', 'error');
+      return;
+    }
+
+    const signer = signers.find((s) => s.id === signerId);
+    if (!signer) return;
+
+    const fieldCount = fields.filter((f) => f.signerId === signerId).length;
+    const confirmMsg = fieldCount > 0
+      ? `Remove ${signer.name} and their ${fieldCount} field${fieldCount > 1 ? 's' : ''}?`
+      : `Remove ${signer.name}?`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch(`/api/envelopes/${envelopeId}/signers/${signerId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.error || 'Failed to remove recipient', 'error');
+        return;
+      }
+
+      // Remove from local state
+      setSigners((prev) => prev.filter((s) => s.id !== signerId));
+      setFields((prev) => prev.filter((f) => f.signerId !== signerId));
+      if (activeSigner === signerId) {
+        setActiveSigner(signers.find((s) => s.id !== signerId)?.id || null);
+      }
+      showToast(`${signer.name} removed`, 'success');
+    } catch {
+      showToast('Unable to remove recipient', 'error');
+    }
+  };
+
+  // ── Edit signer ───────────────────────────────────────────────────
+  const handleStartEditSigner = (signer: typeof signers[0]) => {
+    setEditingSignerId(signer.id);
+    setEditSignerName(signer.name);
+    setEditSignerEmail(signer.email);
+  };
+
+  const handleSaveEditSigner = async () => {
+    if (!editingSignerId || !editSignerName.trim() || !editSignerEmail.trim()) return;
+
+    try {
+      const res = await fetch(`/api/envelopes/${envelopeId}/signers/${editingSignerId}`, {
+        method: 'PUT',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editSignerName.trim(), email: editSignerEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.error || 'Failed to update recipient', 'error');
+        return;
+      }
+
+      setSigners((prev) =>
+        prev.map((s) =>
+          s.id === editingSignerId
+            ? { ...s, name: editSignerName.trim(), email: editSignerEmail.trim() }
+            : s
+        )
+      );
+      setEditingSignerId(null);
+      showToast('Recipient updated', 'success');
+    } catch {
+      showToast('Unable to update recipient', 'error');
     }
   };
 
@@ -661,14 +749,14 @@ export function PreparePage() {
                 const isActive = activeSigner === s.id;
                 const fieldCount = fields.filter((f) => f.signerId === s.id).length;
                 return (
-                  <button
+                  <div
                     key={s.id}
-                    onClick={() => setActiveSigner(s.id)}
-                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-left transition-all ${
+                    className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg text-left transition-all cursor-pointer ${
                       isActive
                         ? 'bg-white shadow-sm border border-gray-200'
                         : 'hover:bg-white/60 border border-transparent'
                     }`}
+                    onClick={() => setActiveSigner(s.id)}
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -676,16 +764,39 @@ export function PreparePage() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-medium text-gray-800 truncate">{s.name}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{s.email}</p>
                     </div>
-                    {fieldCount > 0 && (
+                    {/* Field count or warning */}
+                    {fieldCount > 0 ? (
                       <span
                         className="text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none"
                         style={{ backgroundColor: `${color}15`, color }}
                       >
                         {fieldCount}
                       </span>
+                    ) : (
+                      <span title="No fields assigned" className="text-amber-400">
+                        <AlertTriangle className="w-3 h-3" />
+                      </span>
                     )}
-                  </button>
+                    {/* Edit / Delete buttons (visible on hover) */}
+                    <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleStartEditSigner(s); }}
+                        className="p-1 text-gray-300 hover:text-blue-500 rounded transition-colors"
+                        title="Edit recipient"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteSigner(s.id); }}
+                        className="p-1 text-gray-300 hover:text-red-500 rounded transition-colors"
+                        title="Remove recipient"
+                      >
+                        <UserMinus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -854,6 +965,54 @@ export function PreparePage() {
                 className="flex-1 px-4 py-2 bg-[#2563eb] text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-all"
               >
                 Add
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Edit Signer Modal */}
+      {editingSignerId && createPortal(
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 animate-fade-in" onClick={() => setEditingSignerId(null)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Edit Recipient</h2>
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Name</label>
+                <input
+                  value={editSignerName}
+                  onChange={(e) => setEditSignerName(e.target.value)}
+                  placeholder="Full name"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Email</label>
+                <input
+                  value={editSignerEmail}
+                  onChange={(e) => setEditSignerEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  type="email"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEditSigner(); }}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setEditingSignerId(null)}
+                className="flex-1 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditSigner}
+                disabled={!editSignerName.trim() || !editSignerEmail.trim()}
+                className="flex-1 px-4 py-2 bg-[#2563eb] text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-all"
+              >
+                Save
               </button>
             </div>
           </div>

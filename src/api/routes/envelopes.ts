@@ -15,7 +15,7 @@ import { uploadDocument, downloadDocument } from '../../storage/documentStore.js
 import { hashDocument } from '../../crypto/hasher.js';
 import { ensurePdf } from '../../documents/converter.js';
 import { getDb } from '../../db/connection.js';
-import { documents, envelopes as envelopesTable, signers as signersTable, fields as fieldsTable, folders, envelopeFolders, templates } from '../../db/schema.js';
+import { documents, envelopes as envelopesTable, signers as signersTable, fields as fieldsTable, folders, envelopeFolders, templates, auditEvents as auditEventsTable } from '../../db/schema.js';
 import { v4 as uuidv4 } from 'uuid';
 import { enforceEnvelopeLimit, enforceVerificationLevel } from '../middleware/planEnforcement.js';
 import { getOrganizationId } from '../middleware/auth.js';
@@ -129,6 +129,7 @@ router.post('/', upload.array('documents', 10), parseMultipartJsonFields('signer
     signers: req.body.signers,
     expiresAt: req.body.expiresAt ? new Date(req.body.expiresAt) : undefined,
     organizationId: organizationId ?? undefined,
+    createdBy: req.user?.id || req.user?.email || 'system',
   });
 
   // Upload documents if provided
@@ -512,6 +513,265 @@ router.post('/:id/signers', requireRole('admin', 'sender'), validate(addSignerSc
   } catch (err) {
     console.error('Failed to add signer:', err);
     res.status(500).json({ success: false, error: 'Failed to add signer' });
+  }
+});
+
+/**
+ * PUT /api/envelopes/:id/signers/:signerId
+ * Update a signer's name or email.
+ */
+const updateSignerSchema = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+});
+
+router.put('/:id/signers/:signerId', requireRole('admin', 'sender'), validate(updateSignerSchema), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+  const signerId = req.params.signerId as string;
+
+  try {
+    const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
+    if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
+    if (envelope.status !== 'draft' && envelope.status !== 'sent') {
+      res.status(400).json({ success: false, error: `Cannot edit signers on ${envelope.status} envelope` }); return;
+    }
+
+    const [signer] = await db.select().from(signersTable).where(eq(signersTable.id, signerId)).limit(1);
+    if (!signer || signer.envelopeId !== envelopeId) {
+      res.status(404).json({ success: false, error: 'Signer not found' }); return;
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (req.body.name) updates.name = req.body.name;
+    if (req.body.email) updates.email = req.body.email;
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ success: false, error: 'No fields to update' }); return;
+    }
+
+    const [updated] = await db.update(signersTable).set(updates).where(eq(signersTable.id, signerId)).returning();
+
+    await logEvent({
+      envelopeId,
+      eventType: 'corrected',
+      eventData: { action: 'update_signer', signerId, updates },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('Failed to update signer:', err);
+    res.status(500).json({ success: false, error: 'Failed to update signer' });
+  }
+});
+
+/**
+ * DELETE /api/envelopes/:id/signers/:signerId
+ * Remove a signer and all their fields from an envelope.
+ */
+router.delete('/:id/signers/:signerId', requireRole('admin', 'sender'), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+  const signerId = req.params.signerId as string;
+
+  try {
+    const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
+    if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
+    if (envelope.status !== 'draft' && envelope.status !== 'sent') {
+      res.status(400).json({ success: false, error: `Cannot remove signers from ${envelope.status} envelope` }); return;
+    }
+
+    const [signer] = await db.select().from(signersTable).where(eq(signersTable.id, signerId)).limit(1);
+    if (!signer || signer.envelopeId !== envelopeId) {
+      res.status(404).json({ success: false, error: 'Signer not found' }); return;
+    }
+
+    // Check we're not removing the last signer
+    const allSigners = await db.select().from(signersTable).where(eq(signersTable.envelopeId, envelopeId));
+    if (allSigners.length <= 1) {
+      res.status(400).json({ success: false, error: 'Cannot remove the last signer' }); return;
+    }
+
+    // Delete all fields assigned to this signer
+    await db.delete(fieldsTable).where(
+      and(eq(fieldsTable.envelopeId, envelopeId), eq(fieldsTable.signerId, signerId))
+    );
+
+    // Delete the signer
+    await db.delete(signersTable).where(eq(signersTable.id, signerId));
+
+    await logEvent({
+      envelopeId,
+      eventType: 'corrected',
+      eventData: { action: 'remove_signer', signerName: signer.name, signerEmail: signer.email },
+    });
+
+    res.json({ success: true, data: { deleted: true } });
+  } catch (err) {
+    console.error('Failed to delete signer:', err);
+    res.status(500).json({ success: false, error: 'Failed to delete signer' });
+  }
+});
+
+/**
+ * DELETE /api/envelopes/:id
+ * Delete an envelope (only drafts and voided envelopes can be deleted).
+ */
+router.delete('/:id', requireRole('admin', 'sender'), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
+    if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
+
+    // Only allow deleting drafts and voided envelopes
+    if (envelope.status !== 'draft' && envelope.status !== 'voided') {
+      res.status(400).json({
+        success: false,
+        error: `Cannot delete envelope with status "${envelope.status}". Only draft and voided envelopes can be deleted.`,
+      }); return;
+    }
+
+    // Delete in order: fields → signers → documents → audit events → envelope
+    await db.delete(fieldsTable).where(eq(fieldsTable.envelopeId, envelopeId));
+    await db.delete(signersTable).where(eq(signersTable.envelopeId, envelopeId));
+    await db.delete(documents).where(eq(documents.envelopeId, envelopeId));
+    await db.delete(auditEventsTable).where(eq(auditEventsTable.envelopeId, envelopeId));
+    await db.delete(envelopesTable).where(eq(envelopesTable.id, envelopeId));
+
+    res.json({ success: true, data: { deleted: true } });
+  } catch (err) {
+    console.error('Failed to delete envelope:', err);
+    res.status(500).json({ success: false, error: 'Failed to delete envelope' });
+  }
+});
+
+/**
+ * POST /api/envelopes/:id/resend
+ * Resend signing notifications to pending signers (regenerates expired tokens).
+ */
+router.post('/:id/resend', requireRole('admin', 'sender'), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
+    if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
+
+    if (envelope.status !== 'sent' && envelope.status !== 'in_progress') {
+      res.status(400).json({
+        success: false,
+        error: `Cannot resend notifications for envelope with status "${envelope.status}"`,
+      }); return;
+    }
+
+    // Find pending signers and regenerate their tokens
+    const pendingSigners = await db
+      .select()
+      .from(signersTable)
+      .where(and(eq(signersTable.envelopeId, envelopeId), eq(signersTable.status, 'pending')));
+
+    let resent = 0;
+    for (const signer of pendingSigners) {
+      // Regenerate token if expired or missing
+      if (!signer.signingToken || (signer.tokenExpiresAt && new Date() > new Date(signer.tokenExpiresAt))) {
+        const { assignToken } = await import('../../ceremony/tokenGenerator.js');
+        await assignToken(signer.id);
+      }
+      resent++;
+    }
+
+    await logEvent({
+      envelopeId,
+      eventType: 'reminded',
+      eventData: { action: 'resend', signersResent: resent },
+    });
+
+    res.json({ success: true, data: { resent } });
+  } catch (err) {
+    console.error('Failed to resend:', err);
+    res.status(500).json({ success: false, error: 'Failed to resend notifications' });
+  }
+});
+
+/**
+ * PATCH /api/envelopes/:id
+ * Update envelope metadata (subject, message, expiresAt). Only for draft envelopes.
+ */
+const patchEnvelopeSchema = z.object({
+  subject: z.string().min(1).optional(),
+  message: z.string().optional(),
+  expiresAt: z.string().datetime().optional().nullable(),
+});
+
+router.patch('/:id', requireRole('admin', 'sender'), validate(patchEnvelopeSchema), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
+    if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
+    if (envelope.status !== 'draft') {
+      res.status(400).json({ success: false, error: 'Can only edit metadata of draft envelopes' }); return;
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (req.body.subject !== undefined) updates.subject = req.body.subject;
+    if (req.body.message !== undefined) updates.message = req.body.message;
+    if (req.body.expiresAt !== undefined) updates.expiresAt = req.body.expiresAt ? new Date(req.body.expiresAt) : null;
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ success: false, error: 'No fields to update' }); return;
+    }
+
+    const [updated] = await db.update(envelopesTable).set(updates).where(eq(envelopesTable.id, envelopeId)).returning();
+
+    await logEvent({
+      envelopeId,
+      eventType: 'corrected',
+      eventData: { action: 'update_metadata', updates },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('Failed to update envelope:', err);
+    res.status(500).json({ success: false, error: 'Failed to update envelope' });
+  }
+});
+
+/**
+ * GET /api/envelopes/:id/audit
+ * Get the full audit trail for an envelope.
+ */
+router.get('/:id/audit', requireRole('admin', 'sender'), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
+    if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
+
+    const events = await db
+      .select()
+      .from(auditEventsTable)
+      .where(eq(auditEventsTable.envelopeId, envelopeId))
+      .orderBy(auditEventsTable.createdAt);
+
+    // Enrich with signer names
+    const signerList = await db.select().from(signersTable).where(eq(signersTable.envelopeId, envelopeId));
+    const signerMap = new Map(signerList.map((s) => [s.id, s]));
+
+    const enriched = events.map((e) => ({
+      ...e,
+      signerName: e.signerId ? signerMap.get(e.signerId)?.name || null : null,
+      signerEmail: e.signerId ? signerMap.get(e.signerId)?.email || null : null,
+    }));
+
+    res.json({ success: true, data: { envelope: { id: envelope.id, subject: envelope.subject, status: envelope.status }, events: enriched } });
+  } catch (err) {
+    console.error('Failed to get audit trail:', err);
+    res.status(500).json({ success: false, error: 'Failed to get audit trail' });
   }
 });
 

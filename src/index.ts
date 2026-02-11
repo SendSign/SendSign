@@ -2,12 +2,14 @@ import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { initConfig } from './config/index.js';
 import { getDb, closeDb } from './db/connection.js';
 import { apiRateLimiter, signingRateLimiter } from './api/middleware/rateLimit.js';
 import { authenticate } from './api/middleware/auth.js';
+import { csrfProtection, csrfTokenHandler } from './api/middleware/csrf.js';
 import { scheduleReminders } from './workflow/reminderScheduler.js';
 import { scheduleExpiryCheck } from './workflow/expiryManager.js';
 import { scheduleRetentionProcessing } from './workflow/retentionScheduler.js';
@@ -24,6 +26,7 @@ import retentionRoutes from './api/routes/retention.js';
 import integrationsRoutes from './api/routes/integrations.js';
 import organizationsRoutes from './api/routes/organizations.js';
 import authRoutes from './api/routes/auth.js';
+import complianceRoutes from './api/routes/compliance.js';
 
 // ─── Initialize Configuration ────────────────────────────────────────
 
@@ -40,7 +43,24 @@ console.log(`✓ Database: ${redactedUrl}`);
 const app = express();
 
 // Middleware
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'blob:'],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      workerSrc: ["'self'", 'blob:'],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow PDF.js workers
+}));
 app.use(cors({
   origin: [
     // Salesforce domains (Step 31)
@@ -55,14 +75,19 @@ app.use(cors({
   ],
   credentials: true,
 }));
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// CSRF protection (skips Bearer token requests — only applies to cookie-based sessions)
+app.use(csrfProtection);
 
 // Health check (no auth required)
 app.use(healthRoutes);
 
 // Auth routes (no auth required — this IS the auth)
 app.use('/api/auth', apiRateLimiter, authRoutes);
+app.get('/api/auth/csrf-token', csrfTokenHandler);
 
 // Signing ceremony routes (token auth, rate limited)
 // Mount at both /api/sign and /api/signing for compatibility
@@ -78,6 +103,7 @@ app.use('/api/sso', apiRateLimiter, authenticate, ssoRoutes);
 app.use('/api/retention', apiRateLimiter, authenticate, retentionRoutes);
 app.use('/api/integrations', apiRateLimiter, authenticate, integrationsRoutes);
 app.use('/api/organizations', apiRateLimiter, authenticate, organizationsRoutes);
+app.use('/api/compliance', apiRateLimiter, authenticate, complianceRoutes);
 
 // ─── Serve Signing UI (React SPA) ───────────────────────────────────
 
@@ -90,7 +116,7 @@ app.use('/vite.svg', express.static(path.join(signingUiPath, 'vite.svg')));
 app.use('/sendsign-logo.svg', express.static(path.join(signingUiPath, 'sendsign-logo.svg')));
 
 // SPA fallback: serve index.html for signing UI routes
-const spaRoutes = ['/dashboard', '/login', '/register', '/sign/*', '/prepare/*', '/verify', '/complete', '/expired', '/in-person/*', '/powerform/*', '/admin'];
+const spaRoutes = ['/dashboard', '/login', '/register', '/privacy', '/terms', '/profile', '/sign/*', '/prepare/*', '/verify', '/complete', '/expired', '/in-person/*', '/powerform/*', '/admin'];
 for (const route of spaRoutes) {
   app.get(route, (req, res) => {
     res.sendFile(path.join(signingUiPath, 'index.html'));

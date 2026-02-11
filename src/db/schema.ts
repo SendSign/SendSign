@@ -208,6 +208,9 @@ export const auditEvents = pgTable(
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
     geolocation: text('geolocation'),
+    // Hash chain for tamper-proofing (SHA-256 of previous event + this event's data)
+    eventHash: text('event_hash'),
+    previousHash: text('previous_hash'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -323,6 +326,18 @@ export const users = pgTable(
     isActive: boolean('is_active').notNull().default(true),
     ssoSubject: text('sso_subject').unique(),
     passwordHash: text('password_hash'),
+    // Account lockout fields
+    failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
+    lockedUntil: timestamp('locked_until', { withTimezone: true }),
+    lastFailedAt: timestamp('last_failed_at', { withTimezone: true }),
+    // GDPR / privacy fields
+    gdprConsentAt: timestamp('gdpr_consent_at', { withTimezone: true }),
+    gdprConsentVersion: text('gdpr_consent_version'),
+    ccpaOptOut: boolean('ccpa_opt_out').notNull().default(false),
+    marketingConsent: boolean('marketing_consent').notNull().default(false),
+    privacyPolicyVersion: text('privacy_policy_version'),
+    dataExportRequestedAt: timestamp('data_export_requested_at', { withTimezone: true }),
+    erasureRequestedAt: timestamp('erasure_requested_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

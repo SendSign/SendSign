@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
-import { registerUser, loginUser, verifyJwt } from '../../auth/authService.js';
+import { registerUser, loginUser, verifyJwt, verifyPassword, hashPassword, validatePasswordComplexity } from '../../auth/authService.js';
 import { getDb } from '../../db/connection.js';
 import { users } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -91,6 +91,98 @@ router.get('/me', async (req, res) => {
     res.json({ success: true, data: { user } });
   } catch {
     res.status(500).json({ success: false, error: 'Failed to fetch user' });
+  }
+});
+
+// ─── Helper: extract user from JWT ──────────────────────────────────
+
+async function getAuthenticatedUser(req: import('express').Request) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const payload = verifyJwt(authHeader.substring(7));
+  if (!payload) return null;
+  const db = getDb();
+  const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
+  return user && user.isActive ? user : null;
+}
+
+// ─── PUT /api/auth/profile ──────────────────────────────────────────
+
+const updateProfileSchema = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+});
+
+router.put('/profile', validate(updateProfileSchema), async (req, res) => {
+  const user = await getAuthenticatedUser(req);
+  if (!user) { res.status(401).json({ success: false, error: 'Not authenticated' }); return; }
+
+  try {
+    const db = getDb();
+    const updates: Record<string, unknown> = {};
+    if (req.body.name) updates.name = req.body.name;
+    if (req.body.email) {
+      // Check email uniqueness
+      const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, req.body.email)).limit(1);
+      if (existing && existing.id !== user.id) {
+        res.status(409).json({ success: false, error: 'Email already in use' }); return;
+      }
+      updates.email = req.body.email;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ success: false, error: 'No fields to update' }); return;
+    }
+
+    const [updated] = await db.update(users).set(updates).where(eq(users.id, user.id)).returning({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      role: users.role,
+    });
+
+    res.json({ success: true, data: { user: updated } });
+  } catch {
+    res.status(500).json({ success: false, error: 'Failed to update profile' });
+  }
+});
+
+// ─── POST /api/auth/change-password ─────────────────────────────────
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
+router.post('/change-password', validate(changePasswordSchema), async (req, res) => {
+  const user = await getAuthenticatedUser(req);
+  if (!user) { res.status(401).json({ success: false, error: 'Not authenticated' }); return; }
+
+  try {
+    // Verify current password
+    if (!user.passwordHash) {
+      res.status(400).json({ success: false, error: 'Account uses SSO — password changes are managed by your identity provider' }); return;
+    }
+
+    const valid = await verifyPassword(req.body.currentPassword, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ success: false, error: 'Current password is incorrect' }); return;
+    }
+
+    // Validate new password complexity
+    const complexity = validatePasswordComplexity(req.body.newPassword);
+    if (!complexity.valid) {
+      res.status(400).json({ success: false, error: complexity.errors.join('. ') }); return;
+    }
+
+    // Hash and save
+    const db = getDb();
+    const newHash = await hashPassword(req.body.newPassword);
+    await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, user.id));
+
+    res.json({ success: true, data: { message: 'Password changed successfully' } });
+  } catch {
+    res.status(500).json({ success: false, error: 'Failed to change password' });
   }
 });
 
