@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="145 45 430 130">
+  <text x="360" y="114.4" dominant-baseline="middle" text-anchor="end"
+        font-family="Poppins, Helvetica Neue, Arial, sans-serif"
+        font-size="88" font-weight="500" fill="#FFFFFF">Send</text>
+  <text x="360" y="114.4" dominant-baseline="middle" text-anchor="start"
+        font-family="Poppins, Helvetica Neue, Arial, sans-serif"
+        font-size="88" font-weight="600" font-style="italic" fill="#DE7356">Sign</text>
+</svg>

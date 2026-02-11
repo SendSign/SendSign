@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface SignaturePadProps {
   onApply: (dataUrl: string) => void;
@@ -176,9 +177,23 @@ export function SignaturePad({ onApply, onCancel }: SignaturePadProps) {
     ? 'flex flex-col flex-1'
     : 'bg-white rounded-2xl shadow-2xl w-full max-w-lg';
 
-  return (
-    <div className={containerClass} role="dialog" aria-label="Signature pad">
-      <div className={panelClass}>
+  // Render modal in a portal to prevent event bubbling and re-render issues
+  const modalContent = (
+    <div
+      className={containerClass}
+      role="dialog"
+      aria-label="Signature pad"
+      onClick={(e) => {
+        // Close on backdrop click (desktop only)
+        if (!isMobile && e.target === e.currentTarget) {
+          onCancel();
+        }
+      }}
+    >
+      <div
+        className={panelClass}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className={`p-4 sm:p-6 ${isMobile ? 'border-b border-gray-200' : ''}`}>
           <div className="flex items-center justify-between">
@@ -295,4 +310,6 @@ export function SignaturePad({ onApply, onCancel }: SignaturePadProps) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { MessageSquare } from 'lucide-react';
 import { PDFViewer } from '../components/PDFViewer';
 import { FieldOverlay } from '../components/FieldOverlay';
 import { CoSealBranding } from '../components/CoSealBranding';
 import { CommentPanel } from '../components/CommentPanel';
+import { ConsentModal } from '../components/ConsentModal';
 import { useFieldState } from '../hooks/useFieldLogic';
 import type { SigningSessionData, FieldData } from '../types/index';
 
@@ -34,6 +36,8 @@ export function SigningPage() {
   const [delegateEmail, setDelegateEmail] = useState('');
   const [delegateName, setDelegateName] = useState('');
   const [delegating, setDelegating] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -52,6 +56,8 @@ export function SigningPage() {
         }
 
         setSession(data.data);
+        // Show consent modal after successful load
+        setShowConsentModal(true);
       } catch {
         setError('Unable to connect to the server');
       } finally {
@@ -63,6 +69,16 @@ export function SigningPage() {
   }, [token, navigate]);
 
   const fieldState = useFieldState(session?.fields ?? []);
+
+  // Create stable onChange callbacks for each field to prevent modal flashing
+  const fieldOnChangeHandlers = useMemo(() => {
+    const handlers: Record<string, (value: string) => void> = {};
+    if (!session) return handlers;
+    for (const field of session.fields) {
+      handlers[field.id] = (v: string) => fieldState.setValue(field.id, v);
+    }
+    return handlers;
+  }, [session, fieldState.setValue]);
 
   const handleFinish = async () => {
     if (!session || !fieldState.allRequiredComplete) return;
@@ -82,7 +98,8 @@ export function SigningPage() {
 
       const data = await res.json();
       if (data.success) {
-        navigate('/complete');
+        // Pass envelope ID to completion page for download links
+        navigate(`/complete?envelopeId=${session.envelope.id}&token=${token}`);
       } else {
         setError(data.error || 'Failed to submit signature');
       }
@@ -118,6 +135,34 @@ export function SigningPage() {
     } finally {
       setDelegating(false);
     }
+  };
+
+  const handleConsentAccept = async () => {
+    if (!token) return;
+
+    try {
+      // Record consent with the backend
+      await fetch(`/api/sign/${token}/consent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          consentedAt: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+        }),
+      });
+
+      setHasConsented(true);
+      setShowConsentModal(false);
+    } catch (err) {
+      console.error('Failed to record consent:', err);
+      // Still allow them to proceed even if the consent recording fails
+      setHasConsented(true);
+      setShowConsentModal(false);
+    }
+  };
+
+  const handleConsentDecline = () => {
+    navigate('/expired?reason=consent_declined');
   };
 
   // Navigate to a specific field
@@ -171,7 +216,14 @@ export function SigningPage() {
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between shrink-0 safe-area-top">
+      <header className="bg-white border-b border-gray-200 px-4 sm:px-5 py-4 flex items-center gap-4 sm:gap-5 shrink-0 safe-area-top">
+        {/* Logo */}
+        <img 
+          src="/sendsign-logo.svg" 
+          alt="SendSign" 
+            className="h-12 sm:h-14 w-auto shrink-0"
+        />
+
         <div className="min-w-0 flex-1 mr-3">
           <h1 className="text-sm sm:text-lg font-semibold text-gray-900 truncate">{session.envelope.subject}</h1>
           <p className="text-xs sm:text-sm text-gray-500 truncate">
@@ -180,16 +232,21 @@ export function SigningPage() {
         </div>
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           {/* Progress - visible on all sizes */}
-          <div className="flex items-center gap-2">
-            <div className="w-16 sm:w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-blue-600 transition-all duration-300 rounded-full"
-                style={{ width: `${fieldState.requiredCount > 0 ? (fieldState.requiredCompleted / fieldState.requiredCount) * 100 : 0}%` }}
-              />
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <div className="w-16 sm:w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-600 transition-all duration-300 rounded-full"
+                  style={{ width: `${fieldState.requiredCount > 0 ? (fieldState.requiredCompleted / fieldState.requiredCount) * 100 : 0}%` }}
+                />
+              </div>
+              <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                {fieldState.requiredCompleted}/{fieldState.requiredCount}
+              </span>
             </div>
-            <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-              {fieldState.requiredCompleted}/{fieldState.requiredCount}
-            </span>
+            <p className="text-[10px] sm:text-xs text-gray-400">
+              Field {fieldState.requiredCompleted} of {fieldState.requiredCount} completed
+            </p>
           </div>
 
           {/* Comments button */}
@@ -199,18 +256,16 @@ export function SigningPage() {
             aria-label="Toggle comments"
             title="Comments"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            <MessageSquare className="w-5 h-5" />
           </button>
 
           <button
             onClick={handleFinish}
             disabled={!fieldState.allRequiredComplete || submitting}
-            className="btn-primary text-xs sm:text-sm px-3 sm:px-6 py-2 sm:py-3"
+            className="btn-primary text-xs sm:text-sm px-4 sm:px-8 py-2.5 sm:py-3.5 font-semibold shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
             aria-label="Finish signing"
           >
-            {submitting ? 'Submitting...' : 'Finish'}
+            {submitting ? 'Submitting...' : 'Finish Signing'}
           </button>
         </div>
       </header>
@@ -296,7 +351,7 @@ export function SigningPage() {
 
       {/* PDF viewer with field overlays */}
       <div className="flex-1 overflow-hidden">
-        <PDFViewer pdfUrl={`/api/documents/${session.envelope.id}/pdf`}>
+        <PDFViewer pdfUrl={`/api/signing/${token}/document`}>
           {(page) => (
             <>
               {session.fields
@@ -306,7 +361,7 @@ export function SigningPage() {
                     key={field.id}
                     field={field}
                     value={fieldState.values[field.id] ?? ''}
-                    onChange={(v) => fieldState.setValue(field.id, v)}
+                    onChange={fieldOnChangeHandlers[field.id]}
                     visible={fieldState.visibility[field.id]}
                     required={fieldState.required[field.id]}
                     completed={fieldState.completed[field.id]}
@@ -409,6 +464,14 @@ export function SigningPage() {
           isOpen={showComments}
           onClose={() => setShowComments(false)}
           filterFieldId={commentFilterField}
+        />
+      )}
+
+      {/* Consent Modal */}
+      {showConsentModal && !hasConsented && (
+        <ConsentModal
+          onAccept={handleConsentAccept}
+          onDecline={handleConsentDecline}
         />
       )}
     </div>

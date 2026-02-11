@@ -42,8 +42,10 @@ export interface RoutingDecision {
  * Supports sequential, parallel, and mixed (group-based) ordering.
  */
 export function getNextSigners(envelope: EnvelopeWithSigners): SignerInfo[] {
+  // pending, sent, and notified all mean "hasn't signed yet"
+  const preSigningStatuses = ['pending', 'sent', 'notified'];
   const pendingSigners = envelope.signers.filter(
-    (s) => s.status === 'pending' || s.status === 'sent',
+    (s) => preSigningStatuses.includes(s.status),
   );
 
   if (pendingSigners.length === 0) return [];
@@ -90,7 +92,8 @@ export function canSignerSign(
     return false;
   }
 
-  if (signer.status !== 'pending' && signer.status !== 'sent') {
+  const preSigningStatuses = ['pending', 'sent', 'notified'];
+  if (!preSigningStatuses.includes(signer.status)) {
     return false;
   }
 

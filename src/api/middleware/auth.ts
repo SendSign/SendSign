@@ -4,6 +4,7 @@ import { getDb } from '../../db/connection.js';
 import { organizations, apiKeys, users } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import type { AuthenticatedUser } from './rbac.js';
+import { verifyJwt } from '../../auth/authService.js';
 
 /**
  * Organization context attached to authenticated requests.
@@ -43,15 +44,23 @@ export function hashApiKey(key: string): string {
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Extract token from Authorization header or ?apiKey= query param fallback
+  // (the query param is needed for browser-based pages like /prepare/:id
+  //  where the client can't set custom headers on the initial page load)
+  let token: string | undefined;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  } else if (typeof req.query.apiKey === 'string' && req.query.apiKey.length > 0) {
+    token = req.query.apiKey;
+  }
+
+  if (!token) {
     res.status(401).json({
       success: false,
       error: 'Unauthorized: Missing or invalid Authorization header',
     });
     return;
   }
-
-  const token = authHeader.substring(7); // Remove 'Bearer '
 
   // First try single-tenant mode (env var API key)
   const envApiKey = process.env.API_KEY ?? process.env.COSEAL_API_KEY;
@@ -64,6 +73,18 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     resolveOrCreateUser(req, process.env.COSEAL_ADMIN_EMAIL || 'admin@coseal.local', 'admin')
       .then(() => next())
       .catch(() => next()); // Proceed even if user resolution fails
+    return;
+  }
+
+  // Try JWT authentication (email/password or SSO login)
+  const jwtPayload = verifyJwt(token);
+  if (jwtPayload) {
+    (req as AuthenticatedRequest).authenticated = true;
+
+    // Resolve user from JWT payload
+    resolveOrCreateUser(req, jwtPayload.email, jwtPayload.role as 'admin' | 'sender' | 'viewer', jwtPayload.organizationId || undefined)
+      .then(() => next())
+      .catch(() => next());
     return;
   }
 
@@ -216,8 +237,14 @@ async function resolveOrCreateUser(
 export function optionalAuth(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
 
+  let token: string | undefined;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
+    token = authHeader.substring(7);
+  } else if (typeof req.query.apiKey === 'string' && req.query.apiKey.length > 0) {
+    token = req.query.apiKey;
+  }
+
+  if (token) {
     const apiKey = process.env.API_KEY ?? process.env.COSEAL_API_KEY;
 
     if (token === apiKey) {

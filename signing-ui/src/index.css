@@ -123,3 +123,92 @@
     animation: none !important;
   }
 }
+
+/* ─── Completion page animations ─── */
+@keyframes scale-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─── Prepare page animations ─── */
+
+/* Toast slide-in from top */
+@keyframes toast-in {
+  0% {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.2s ease-out;
+}
+
+/* Field scale-in on drop */
+@keyframes field-in {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-field-in {
+  animation: field-in 0.15s ease-out;
+}
+
+/* Popover fade-in */
+@keyframes popover-in {
+  0% {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-popover-in {
+  animation: popover-in 0.15s ease-out;
+}
+
+/* Modal backdrop fade-in */
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out;
+}
+
+/* Send button pulse when ready */
+@keyframes send-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(37, 99, 235, 0); }
+}
+
+.animate-send-pulse {
+  animation: send-pulse 2s ease-in-out infinite;
+}

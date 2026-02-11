@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { FieldData } from '../types/index';
 import {
   SignatureField,
@@ -26,7 +27,7 @@ interface FieldOverlayProps {
   scale?: number;
 }
 
-export function FieldOverlay({
+export const FieldOverlay = memo(function FieldOverlay({
   field,
   value,
   onChange,
@@ -94,4 +95,4 @@ export function FieldOverlay({
       {renderField()}
     </div>
   );
-}
+});

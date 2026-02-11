@@ -23,11 +23,17 @@ import ssoRoutes from './api/routes/sso.js';
 import retentionRoutes from './api/routes/retention.js';
 import integrationsRoutes from './api/routes/integrations.js';
 import organizationsRoutes from './api/routes/organizations.js';
+import authRoutes from './api/routes/auth.js';
 
 // ─── Initialize Configuration ────────────────────────────────────────
 
 const config = initConfig();
+
+// Log DATABASE_URL with password redacted for debugging
+const dbUrl = config.databaseUrl;
+const redactedUrl = dbUrl.replace(/:([^@]+)@/, ':****@');
 console.log('✓ Configuration validated');
+console.log(`✓ Database: ${redactedUrl}`);
 
 // ─── Initialize Express App ──────────────────────────────────────────
 
@@ -55,8 +61,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Health check (no auth required)
 app.use(healthRoutes);
 
+// Auth routes (no auth required — this IS the auth)
+app.use('/api/auth', apiRateLimiter, authRoutes);
+
 // Signing ceremony routes (token auth, rate limited)
+// Mount at both /api/sign and /api/signing for compatibility
 app.use('/api/sign', signingRateLimiter, signingRoutes);
+app.use('/api/signing', signingRateLimiter, signingRoutes);
 
 // API routes (require API key auth, rate limited)
 app.use('/api/envelopes', apiRateLimiter, authenticate, envelopeRoutes);
@@ -76,14 +87,20 @@ const signingUiPath = path.resolve(__dirname, '../signing-ui/dist');
 // Serve static assets
 app.use('/assets', express.static(path.join(signingUiPath, 'assets')));
 app.use('/vite.svg', express.static(path.join(signingUiPath, 'vite.svg')));
+app.use('/sendsign-logo.svg', express.static(path.join(signingUiPath, 'sendsign-logo.svg')));
 
 // SPA fallback: serve index.html for signing UI routes
-const spaRoutes = ['/sign/*', '/verify', '/complete', '/expired', '/in-person/*', '/powerform/*', '/admin'];
+const spaRoutes = ['/dashboard', '/login', '/register', '/sign/*', '/prepare/*', '/verify', '/complete', '/expired', '/in-person/*', '/powerform/*', '/admin'];
 for (const route of spaRoutes) {
   app.get(route, (req, res) => {
     res.sendFile(path.join(signingUiPath, 'index.html'));
   });
 }
+
+// Root route — serve dashboard
+app.get('/', (req, res) => {
+  res.sendFile(path.join(signingUiPath, 'index.html'));
+});
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -125,6 +142,17 @@ if (process.env.NODE_ENV !== 'test') {
     scheduleExpiryCheck();
     scheduleRetentionProcessing();
     console.log('✓ Cron jobs started (reminders, expiry checks, retention processing)');
+  });
+
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n✗ Port ${PORT} is already in use.`);
+      console.error(`  Kill the other process:  lsof -ti :${PORT} | xargs kill -9`);
+      console.error(`  Or use a different port:  PORT=3001 npm run dev\n`);
+    } else {
+      console.error('✗ Server error:', err);
+    }
+    process.exit(1);
   });
 
   // ─── Graceful Shutdown ───────────────────────────────────────────────

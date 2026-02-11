@@ -138,23 +138,24 @@ export function CoSealBranding() {
     );
   }
 
-  // Default CoSeal branding (no entitlement)
+  // Default SendSign branding (no entitlement)
   return (
     <div
       ref={ref}
-      className="text-center py-4 text-xs text-gray-400 border-t border-gray-100"
+      className="text-center py-5 text-xs text-gray-400 border-t border-gray-100"
       data-coseal-branding="true"
     >
-      <span>Powered by </span>
-      <a
-        href="https://github.com/coseal"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-semibold text-gray-500 hover:text-blue-600 transition-colors"
-      >
-        CoSeal
-      </a>
-      <span> — Open Source E-Signature Engine</span>
+      <div className="flex items-center justify-center gap-2.5 mb-2">
+        <span className="font-medium">Powered by</span>
+        <img 
+          src="/sendsign-logo.svg" 
+          alt="SendSign" 
+            className="h-8 w-auto inline-block"
+        />
+      </div>
+      <p className="text-gray-300">
+        Electronic signatures secured with SHA-256 encryption
+      </p>
     </div>
   );
 }

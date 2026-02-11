@@ -53,7 +53,9 @@ export async function validateToken(token: string): Promise<TokenValidationResul
       return { valid: false, reason: 'Token expired', signer: mapSigner(signer) };
     }
 
-    if (signer.status !== 'pending' && signer.status !== 'sent') {
+    // Accept pending, sent, or notified — all mean "hasn't signed yet"
+    const validStatuses = ['pending', 'sent', 'notified'];
+    if (!validStatuses.includes(signer.status)) {
       return {
         valid: false,
         reason: `Signer has already ${signer.status}`,

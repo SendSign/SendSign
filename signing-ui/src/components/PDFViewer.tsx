@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set worker path
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+// Use the local worker bundled with pdfjs-dist instead of a CDN URL.
+// The ?url suffix tells Vite to emit the file and return its public URL.
+import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
 interface PDFViewerProps {
   pdfUrl: string;
+  /** Optional headers to include when fetching the PDF (e.g. Authorization). */
+  fetchHeaders?: Record<string, string>;
   children?: (pageInfo: { pageNumber: number; width: number; height: number }) => React.ReactNode;
   activeDocument?: number;
   documentCount?: number;
@@ -31,15 +36,23 @@ function useIsMobile(): boolean {
   return isMobile;
 }
 
-export function PDFViewer({ pdfUrl, children, activeDocument, documentCount, onDocumentChange }: PDFViewerProps) {
+export function PDFViewer({ pdfUrl, fetchHeaders, children, activeDocument, documentCount, onDocumentChange }: PDFViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PageRendered[]>([]);
-  const [scale, setScale] = useState(1.0);
+  // Base scale is 1.5x (displayed as 100%). Range: 1.125x (75%) to 3.0x (200%)
+  const [scale, setScale] = useState(1.5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const isMobile = useIsMobile();
+  
+  // Convert actual scale to display percentage (1.5 = 100%)
+  const displayPercent = Math.round((scale / 1.5) * 100);
+
+  // Store the parsed PDF document so we can re-render pages when scale
+  // changes without re-fetching from the server.
+  const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
 
   // Touch gesture state for pinch-to-zoom
   const touchState = useRef<{
@@ -54,7 +67,8 @@ export function PDFViewer({ pdfUrl, children, activeDocument, documentCount, onD
       if (pages.length > 0) {
         const pageWidth = pages[0].width;
         const fitScale = containerWidth / pageWidth;
-        setScale(Math.min(fitScale, 1.5));
+        // Cap at 150% display (2.25x actual) for mobile auto-fit
+        setScale(Math.min(fitScale, 2.25));
       }
     }
   }, [isMobile, pages]);
@@ -102,7 +116,7 @@ export function PDFViewer({ pdfUrl, children, activeDocument, documentCount, onD
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const currentDistance = Math.sqrt(dx * dx + dy * dy);
       const ratio = currentDistance / touchState.current.initialDistance;
-      const newScale = Math.max(0.5, Math.min(3.0, touchState.current.initialScale * ratio));
+      const newScale = Math.max(1.125, Math.min(3.0, touchState.current.initialScale * ratio));
       setScale(newScale);
     }
   }, []);
@@ -111,6 +125,7 @@ export function PDFViewer({ pdfUrl, children, activeDocument, documentCount, onD
     touchState.current.initialDistance = null;
   }, []);
 
+  // ── Effect 1: Load and parse the PDF (only when URL changes) ──────
   useEffect(() => {
     let cancelled = false;
 
@@ -118,12 +133,42 @@ export function PDFViewer({ pdfUrl, children, activeDocument, documentCount, onD
       try {
         setLoading(true);
         setError(null);
+        setPages([]);
+        pdfDocRef.current = null;
 
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        // Pre-flight fetch to check for server-side errors
+        // (e.g. 422 "PDF conversion required") before handing to pdf.js
+        const response = await fetch(pdfUrl, fetchHeaders ? { headers: fetchHeaders } : undefined);
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const errData = await response.json();
+            if (errData.error === 'PDF conversion required') {
+              setError(
+                'This document was uploaded in a non-PDF format and could not be converted automatically. ' +
+                'Please ask the sender to re-upload it as a PDF, or install LibreOffice on the server.',
+              );
+              setLoading(false);
+              return;
+            }
+            setError(errData.error || errData.detail || 'Failed to load document');
+          } else {
+            setError(`Failed to load PDF (HTTP ${response.status})`);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Convert response to ArrayBuffer and hand to pdf.js
+        const pdfData = new Uint8Array(await response.arrayBuffer());
+        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
         const pdf = await loadingTask.promise;
 
         if (cancelled) return;
 
+        pdfDocRef.current = pdf;
+
+        // Extract page dimensions at scale=1
         const pageInfos: PageRendered[] = [];
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
@@ -131,26 +176,15 @@ export function PDFViewer({ pdfUrl, children, activeDocument, documentCount, onD
           pageInfos.push({ pageNumber: i, width: viewport.width, height: viewport.height });
         }
 
+        if (cancelled) return;
+
+        // Setting pages triggers a re-render which creates the canvas
+        // elements. Effect 2 (below) handles the actual rendering.
         setPages(pageInfos);
-
-        // Render each page
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale });
-          const canvas = canvasRefs.current.get(i);
-          if (!canvas || cancelled) continue;
-
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) continue;
-
-          await page.render({ canvasContext: ctx, viewport, canvas } as any).promise;
-        }
-
         setLoading(false);
       } catch (err) {
         if (!cancelled) {
+          console.error('[PDFViewer] Failed to load PDF:', err);
           setError('Failed to load PDF');
           setLoading(false);
         }
@@ -159,7 +193,37 @@ export function PDFViewer({ pdfUrl, children, activeDocument, documentCount, onD
 
     loadPdf();
     return () => { cancelled = true; };
-  }, [pdfUrl, scale]);
+  }, [pdfUrl, fetchHeaders]);
+
+  // ── Effect 2: Render pages to canvases (when pages load or scale changes) ──
+  useEffect(() => {
+    if (pages.length === 0 || !pdfDocRef.current) return;
+
+    let cancelled = false;
+    const pdf = pdfDocRef.current;
+
+    async function renderPages() {
+      for (let i = 1; i <= pdf.numPages; i++) {
+        if (cancelled) return;
+
+        const canvas = canvasRefs.current.get(i);
+        if (!canvas) continue;
+
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale });
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) continue;
+
+        await page.render({ canvasContext: ctx, viewport } as Parameters<typeof page.render>[0]).promise;
+      }
+    }
+
+    renderPages();
+    return () => { cancelled = true; };
+  }, [pages, scale]);
 
   // Navigate to page (mobile)
   const scrollToPage = (pageNumber: number) => {
@@ -210,15 +274,15 @@ export function PDFViewer({ pdfUrl, children, activeDocument, documentCount, onD
         {/* Zoom controls */}
         <div className="flex items-center gap-1 sm:gap-2">
           <button
-            onClick={() => setScale((s) => Math.max(0.5, s - 0.25))}
+            onClick={() => setScale((s) => Math.max(1.125, s - 0.375))}
             className="p-1.5 sm:p-1 rounded hover:bg-gray-100 text-gray-600 active:bg-gray-200"
             aria-label="Zoom out"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
           </button>
-          <span className="text-xs sm:text-sm text-gray-600 min-w-[2.5rem] sm:min-w-[3rem] text-center">{Math.round(scale * 100)}%</span>
+          <span className="text-xs sm:text-sm text-gray-600 min-w-[2.5rem] sm:min-w-[3rem] text-center">{displayPercent}%</span>
           <button
-            onClick={() => setScale((s) => Math.min(3.0, s + 0.25))}
+            onClick={() => setScale((s) => Math.min(3.0, s + 0.375))}
             className="p-1.5 sm:p-1 rounded hover:bg-gray-100 text-gray-600 active:bg-gray-200"
             aria-label="Zoom in"
           >

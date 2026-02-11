@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
@@ -11,8 +11,9 @@ import {
   completeEnvelope,
 } from '../../workflow/envelopeManager.js';
 import { correctEnvelope } from '../../workflow/envelopeCorrector.js';
-import { uploadDocument } from '../../storage/documentStore.js';
+import { uploadDocument, downloadDocument } from '../../storage/documentStore.js';
 import { hashDocument } from '../../crypto/hasher.js';
+import { ensurePdf } from '../../documents/converter.js';
 import { getDb } from '../../db/connection.js';
 import { documents, envelopes as envelopesTable, signers as signersTable, fields as fieldsTable, folders, envelopeFolders, templates } from '../../db/schema.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,9 +21,38 @@ import { enforceEnvelopeLimit, enforceVerificationLevel } from '../middleware/pl
 import { getOrganizationId } from '../middleware/auth.js';
 import { requireRole, requireOwnership } from '../middleware/rbac.js';
 import { eq, and, or, inArray } from 'drizzle-orm';
+import { logEvent } from '../../audit/auditLogger.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+
+/**
+ * Middleware to parse JSON string fields from multipart/form-data requests.
+ * When sending multipart forms, structured fields like `signers` arrive as
+ * JSON strings (e.g. '[{"name":"Alice","email":"alice@example.com"}]').
+ * This middleware detects the content type and JSON-parses those fields
+ * so that downstream zod validation sees actual objects/arrays.
+ */
+function parseMultipartJsonFields(...fieldNames: string[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const ct = req.headers['content-type'] || '';
+    if (!ct.includes('multipart/form-data')) {
+      return next();
+    }
+
+    for (const field of fieldNames) {
+      const value = req.body[field];
+      if (typeof value === 'string') {
+        try {
+          req.body[field] = JSON.parse(value);
+        } catch {
+          // Leave as-is — zod validation will catch the type mismatch
+        }
+      }
+    }
+    next();
+  };
+}
 
 // ─── Schemas ─────────────────────────────────────────────────────────
 
@@ -31,6 +61,7 @@ const createEnvelopeSchema = z.object({
   message: z.string().optional(),
   signingOrder: z.enum(['sequential', 'parallel']).default('sequential'),
   expiresAt: z.string().datetime().optional(),
+  templateId: z.string().uuid().optional(),
   signers: z.array(
     z.object({
       name: z.string().min(1),
@@ -85,7 +116,7 @@ const correctEnvelopeSchema = z.object({
  * POST /api/envelopes
  * Create a new envelope with optional document upload.
  */
-router.post('/', upload.array('documents', 10), requireRole('admin', 'sender'), enforceEnvelopeLimit, enforceVerificationLevel, validate(createEnvelopeSchema), async (req, res) => {
+router.post('/', upload.array('documents', 10), parseMultipartJsonFields('signers'), requireRole('admin', 'sender'), enforceEnvelopeLimit, enforceVerificationLevel, validate(createEnvelopeSchema), async (req, res) => {
   const files = req.files as Express.Multer.File[] | undefined;
   const db = getDb();
   const organizationId = getOrganizationId(req);
@@ -101,32 +132,145 @@ router.post('/', upload.array('documents', 10), requireRole('admin', 'sender'), 
   });
 
   // Upload documents if provided
+  const conversionWarnings: string[] = [];
+
   if (files && files.length > 0) {
+    let primaryStoragePath: string | null = null;
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const docId = uuidv4();
 
-      // Upload to storage
-      const storagePath = await uploadDocument(file.buffer, {
-        filename: file.originalname,
-        contentType: file.mimetype,
+      // Convert non-PDF files (DOCX, DOC, etc.) to PDF via LibreOffice.
+      // If LibreOffice isn't available, the raw file is stored and
+      // a conversionError is flagged so the signing UI can report it.
+      const conversion = await ensurePdf(file.buffer, file.originalname, file.mimetype);
+
+      if (conversion.conversionError) {
+        conversionWarnings.push(
+          `${file.originalname}: ${conversion.conversionError}`,
+        );
+      }
+
+      // Upload the (possibly converted) buffer to storage
+      const storagePath = await uploadDocument(conversion.buffer, {
+        filename: conversion.filename,
+        contentType: conversion.contentType,
         envelopeId: envelope.id,
       });
 
-      // Save document record
+      // First file becomes the primary document for the envelope
+      if (i === 0) {
+        primaryStoragePath = storagePath;
+      }
+
+      // Save document record in the documents table
       await db.insert(documents).values({
         id: docId,
         envelopeId: envelope.id,
-        filename: file.originalname,
-        contentType: file.mimetype,
+        filename: conversion.filename,
+        contentType: conversion.contentType,
         storagePath,
-        documentHash: hashDocument(file.buffer),
+        documentHash: hashDocument(conversion.buffer),
         order: i,
       });
     }
+
+    // Set the envelope's documentKey so that retention, sealing,
+    // and API responses include the primary document reference
+    if (primaryStoragePath) {
+      await db
+        .update(envelopesTable)
+        .set({ documentKey: primaryStoragePath })
+        .where(eq(envelopesTable.id, envelope.id));
+
+      envelope.documentKey = primaryStoragePath;
+    }
   }
 
-  res.status(201).json({ success: true, data: envelope });
+  // If a templateId was provided, copy all field positions from the template
+  // onto this envelope's first document and signers.
+  if (req.body.templateId) {
+    const [template] = await db
+      .select()
+      .from(templates)
+      .where(eq(templates.id, req.body.templateId))
+      .limit(1);
+
+    if (template) {
+      const templateFields = template.fieldConfig as Array<{
+        type: string;
+        page: number;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        required?: boolean;
+        signerRole?: string;
+        label?: string;
+        options?: unknown;
+        anchorText?: string;
+      }>;
+
+      if (Array.isArray(templateFields) && templateFields.length > 0) {
+        // Find the first document for this envelope to attach fields to
+        const [firstDoc] = await db
+          .select()
+          .from(documents)
+          .where(eq(documents.envelopeId, envelope.id))
+          .orderBy(documents.order)
+          .limit(1);
+
+        // Build a role→signer map so template fields can be assigned
+        // to the correct signer based on the signerRole in the template.
+        const signersByRole = new Map<string, string>();
+        for (const s of envelope.signers) {
+          signersByRole.set(s.role, s.id);
+        }
+        // Fallback: first signer if role doesn't match
+        const fallbackSignerId = envelope.signers[0]?.id ?? null;
+
+        for (const tf of templateFields) {
+          const signerId =
+            (tf.signerRole ? signersByRole.get(tf.signerRole) : null) ??
+            fallbackSignerId;
+
+          await db.insert(fieldsTable).values({
+            id: uuidv4(),
+            envelopeId: envelope.id,
+            documentId: firstDoc?.id ?? envelope.id, // best-effort if no document yet
+            signerId,
+            type: tf.type as 'signature' | 'initial' | 'date' | 'text' | 'checkbox',
+            page: tf.page,
+            x: tf.x,
+            y: tf.y,
+            width: tf.width,
+            height: tf.height,
+            required: tf.required ?? true,
+            anchorText: tf.anchorText ?? null,
+            options: tf.options ?? null,
+          });
+        }
+      }
+    }
+
+    // Re-fetch the envelope to include the newly created fields
+    const { getEnvelope: getFullEnvelope } = await import('../../workflow/envelopeManager.js');
+    const fullEnvelope = await getFullEnvelope(envelope.id);
+    if (fullEnvelope) {
+      Object.assign(envelope, fullEnvelope);
+    }
+  }
+
+  const response: { success: boolean; data: typeof envelope; warnings?: string[] } = {
+    success: true,
+    data: envelope,
+  };
+  if (conversionWarnings.length > 0) {
+    response.warnings = conversionWarnings;
+  }
+
+  res.status(201).json(response);
 });
 
 /**
@@ -145,6 +289,152 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
+ * GET /api/envelopes/:id/document
+ * Serve the PDF document for an envelope (requires API key auth via the
+ * parent router). Used by the prepare page to render the PDF for field
+ * placement.
+ */
+router.get('/:id/document', async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id;
+
+  try {
+    // Try the documents table first
+    const docs = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.envelopeId, envelopeId))
+      .orderBy(documents.order)
+      .limit(1);
+
+    if (docs.length > 0) {
+      const doc = docs[0];
+      const pdfBuffer = await downloadDocument(doc.storagePath);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${doc.filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+      return;
+    }
+
+    // Fall back to envelope.documentKey
+    const [envelope] = await db
+      .select()
+      .from(envelopesTable)
+      .where(eq(envelopesTable.id, envelopeId))
+      .limit(1);
+
+    if (envelope?.documentKey) {
+      const pdfBuffer = await downloadDocument(envelope.documentKey);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+      return;
+    }
+
+    res.status(404).json({ success: false, error: 'No documents found for this envelope' });
+  } catch (err) {
+    console.error('Failed to serve document:', err);
+    res.status(500).json({ success: false, error: 'Failed to load document' });
+  }
+});
+
+/**
+ * GET /api/envelopes/:id/signed-document
+ * Download the sealed (signed) PDF with all signatures embedded.
+ */
+router.get('/:id/signed-document', requireRole('admin', 'sender', 'viewer'), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    const [envelope] = await db
+      .select()
+      .from(envelopesTable)
+      .where(eq(envelopesTable.id, envelopeId))
+      .limit(1);
+
+    if (!envelope) {
+      res.status(404).json({ success: false, error: 'Envelope not found' });
+      return;
+    }
+
+    if (envelope.status !== 'completed') {
+      res.status(400).json({
+        success: false,
+        error: 'Envelope is not yet completed. Signed document is only available after all signers finish.',
+      });
+      return;
+    }
+
+    if (!envelope.sealedKey) {
+      res.status(404).json({
+        success: false,
+        error: 'Sealed document not found. The PDF may still be processing.',
+      });
+      return;
+    }
+
+    const pdfBuffer = await downloadDocument(envelope.sealedKey);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="signed_${envelope.subject || 'document'}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Failed to serve signed document:', err);
+    res.status(500).json({ success: false, error: 'Failed to download signed document' });
+  }
+});
+
+/**
+ * GET /api/envelopes/:id/certificate
+ * Download the completion certificate with audit trail.
+ */
+router.get('/:id/certificate', requireRole('admin', 'sender', 'viewer'), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    const [envelope] = await db
+      .select()
+      .from(envelopesTable)
+      .where(eq(envelopesTable.id, envelopeId))
+      .limit(1);
+
+    if (!envelope) {
+      res.status(404).json({ success: false, error: 'Envelope not found' });
+      return;
+    }
+
+    if (envelope.status !== 'completed') {
+      res.status(400).json({
+        success: false,
+        error: 'Envelope is not yet completed. Certificate is only available after all signers finish.',
+      });
+      return;
+    }
+
+    if (!envelope.completionCertKey) {
+      res.status(404).json({
+        success: false,
+        error: 'Completion certificate not found. It may still be generating.',
+      });
+      return;
+    }
+
+    const pdfBuffer = await downloadDocument(envelope.completionCertKey);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="certificate_${envelope.subject || 'document'}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Failed to serve certificate:', err);
+    res.status(500).json({ success: false, error: 'Failed to download certificate' });
+  }
+});
+
+/**
  * GET /api/envelopes
  * List envelopes with optional filters.
  */
@@ -160,15 +450,267 @@ router.get('/', async (req, res) => {
   res.json({ success: true, data: result });
 });
 
+// ─── Signer management (prepare page) ───────────────────────────────
+
+const addSignerSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Valid email is required'),
+  role: z.enum(['signer', 'cc', 'witness']).default('signer'),
+});
+
+/**
+ * POST /api/envelopes/:id/signers
+ * Add a new signer to an existing envelope (must be in draft or sent status).
+ */
+router.post('/:id/signers', requireRole('admin', 'sender'), validate(addSignerSchema), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  try {
+    // Check envelope exists and is editable
+    const [envelope] = await db
+      .select()
+      .from(envelopesTable)
+      .where(eq(envelopesTable.id, envelopeId))
+      .limit(1);
+
+    if (!envelope) {
+      res.status(404).json({ success: false, error: 'Envelope not found' });
+      return;
+    }
+
+    if (envelope.status !== 'draft' && envelope.status !== 'sent') {
+      res.status(400).json({
+        success: false,
+        error: `Cannot add signers to envelope with status: ${envelope.status}`,
+      });
+      return;
+    }
+
+    // Create the new signer
+    const existingSigners = await db.select().from(signersTable).where(eq(signersTable.envelopeId, envelopeId));
+    const [newSigner] = await db
+      .insert(signersTable)
+      .values({
+        envelopeId,
+        name: req.body.name,
+        email: req.body.email,
+        role: req.body.role || 'signer',
+        status: envelope.status === 'sent' ? 'pending' : 'draft',
+        order: existingSigners.length + 1,
+      })
+      .returning();
+
+    // Log audit event
+    await logEvent({
+      envelopeId,
+      eventType: 'created',
+      eventData: { signerName: newSigner.name, signerEmail: newSigner.email },
+    });
+
+    res.status(201).json({ success: true, data: newSigner });
+  } catch (err) {
+    console.error('Failed to add signer:', err);
+    res.status(500).json({ success: false, error: 'Failed to add signer' });
+  }
+});
+
+// ─── Field management (prepare page) ────────────────────────────────
+
+const bulkFieldSchema = z.object({
+  fields: z.array(
+    z.object({
+      type: z.enum(['signature', 'initial', 'date', 'text', 'checkbox', 'radio', 'dropdown', 'number', 'currency', 'calculated', 'attachment']),
+      signerId: z.string().uuid().nullable().optional(),
+      page: z.number().int().min(1),
+      x: z.number().min(0),
+      y: z.number().min(0),
+      width: z.number().min(0),
+      height: z.number().min(0),
+      required: z.boolean().default(true),
+      label: z.string().optional(),
+    }),
+  ),
+});
+
+const updateFieldSchema = z.object({
+  signerId: z.string().uuid().nullable().optional(),
+  page: z.number().int().min(1).optional(),
+  x: z.number().min(0).optional(),
+  y: z.number().min(0).optional(),
+  width: z.number().min(0).optional(),
+  height: z.number().min(0).optional(),
+  required: z.boolean().optional(),
+  label: z.string().optional(),
+});
+
+/**
+ * POST /api/envelopes/:id/fields
+ * Bulk save fields — replaces all existing fields for this envelope.
+ */
+router.post('/:id/fields', requireRole('admin', 'sender'), validate(bulkFieldSchema), async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  // Verify envelope exists
+  const envelope = await getEnvelope(envelopeId);
+  if (!envelope) {
+    res.status(404).json({ success: false, error: 'Envelope not found' });
+    return;
+  }
+
+  // Get first document to attach fields to
+  const [firstDoc] = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.envelopeId, envelopeId))
+    .orderBy(documents.order)
+    .limit(1);
+
+  if (!firstDoc) {
+    // If no documents table record, create one from the envelope's documentKey
+    // so fields have a valid documentId reference
+    res.status(400).json({
+      success: false,
+      error: 'No document found for this envelope. Upload a document first.',
+    });
+    return;
+  }
+  const documentId = firstDoc.id;
+
+  // Delete existing fields for this envelope
+  await db.delete(fieldsTable).where(eq(fieldsTable.envelopeId, envelopeId));
+
+  // Insert new fields
+  const insertedFields = [];
+  for (const f of req.body.fields) {
+    const [inserted] = await db
+      .insert(fieldsTable)
+      .values({
+        id: uuidv4(),
+        envelopeId,
+        documentId,
+        signerId: f.signerId ?? null,
+        type: f.type,
+        page: f.page,
+        x: f.x,
+        y: f.y,
+        width: f.width,
+        height: f.height,
+        required: f.required ?? true,
+        anchorText: f.label ?? null,
+      })
+      .returning();
+    insertedFields.push(inserted);
+  }
+
+  res.json({ success: true, data: insertedFields });
+});
+
+/**
+ * GET /api/envelopes/:id/fields
+ * Return all fields for this envelope.
+ */
+router.get('/:id/fields', async (req, res) => {
+  const db = getDb();
+  const envelopeId = req.params.id as string;
+
+  const envelopeFields = await db
+    .select()
+    .from(fieldsTable)
+    .where(eq(fieldsTable.envelopeId, envelopeId));
+
+  res.json({ success: true, data: envelopeFields });
+});
+
+/**
+ * PUT /api/envelopes/:id/fields/:fieldId
+ * Update a single field.
+ */
+router.put('/:id/fields/:fieldId', requireRole('admin', 'sender'), validate(updateFieldSchema), async (req, res) => {
+  const db = getDb();
+  const fieldId = req.params.fieldId as string;
+
+  const [existing] = await db
+    .select()
+    .from(fieldsTable)
+    .where(eq(fieldsTable.id, fieldId))
+    .limit(1);
+
+  if (!existing) {
+    res.status(404).json({ success: false, error: 'Field not found' });
+    return;
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (req.body.signerId !== undefined) updates.signerId = req.body.signerId;
+  if (req.body.page !== undefined) updates.page = req.body.page;
+  if (req.body.x !== undefined) updates.x = req.body.x;
+  if (req.body.y !== undefined) updates.y = req.body.y;
+  if (req.body.width !== undefined) updates.width = req.body.width;
+  if (req.body.height !== undefined) updates.height = req.body.height;
+  if (req.body.required !== undefined) updates.required = req.body.required;
+  if (req.body.label !== undefined) updates.anchorText = req.body.label;
+
+  await db.update(fieldsTable).set(updates).where(eq(fieldsTable.id, fieldId));
+
+  const [updated] = await db.select().from(fieldsTable).where(eq(fieldsTable.id, fieldId));
+  res.json({ success: true, data: updated });
+});
+
+/**
+ * DELETE /api/envelopes/:id/fields/:fieldId
+ * Delete a single field.
+ */
+router.delete('/:id/fields/:fieldId', requireRole('admin', 'sender'), async (req, res) => {
+  const db = getDb();
+  const fieldId = req.params.fieldId as string;
+  await db.delete(fieldsTable).where(eq(fieldsTable.id, fieldId));
+  res.json({ success: true, data: { message: 'Field deleted' } });
+});
+
 /**
  * POST /api/envelopes/:id/send
- * Send an envelope to signers.
+ * Send an envelope to signers. Validates that every signer has at least
+ * one signature field before sending.
  */
 router.post('/:id/send', requireRole('admin', 'sender'), requireOwnership('id'), async (req, res) => {
-  await sendEnvelope(req.params.id);
-  const envelope = await getEnvelope(req.params.id);
+  const db = getDb();
+  const envelopeId = req.params.id as string;
 
-  res.json({ success: true, data: envelope });
+  // Validate: every signer must have at least one signature field
+  const envelope = await getEnvelope(envelopeId);
+  if (!envelope) {
+    res.status(404).json({ success: false, error: 'Envelope not found' });
+    return;
+  }
+
+  const envelopeFields = await db
+    .select()
+    .from(fieldsTable)
+    .where(eq(fieldsTable.envelopeId, envelopeId));
+
+  const signersWithSignature = new Set(
+    envelopeFields
+      .filter((f) => f.type === 'signature' && f.signerId)
+      .map((f) => f.signerId!),
+  );
+
+  const signersWithoutSig = envelope.signers
+    .filter((s) => s.role === 'signer' && !signersWithSignature.has(s.id));
+
+  if (signersWithoutSig.length > 0) {
+    const names = signersWithoutSig.map((s) => s.name).join(', ');
+    res.status(400).json({
+      success: false,
+      error: `The following signers have no signature field: ${names}. Place at least one signature field for each signer before sending.`,
+    });
+    return;
+  }
+
+  await sendEnvelope(envelopeId);
+  const updated = await getEnvelope(envelopeId);
+  res.json({ success: true, data: updated });
 });
 
 /**

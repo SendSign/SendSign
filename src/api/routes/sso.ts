@@ -257,18 +257,17 @@ router.post('/callback', async (req, res) => {
       ipAddress: req.ip ?? '',
     });
 
-    // In production, set a session cookie or JWT token here
-    // For now, return user info
-    res.json({
-      success: true,
-      data: {
-        user: {
-          email: user.email,
-          name: user.name,
-          organizationId: user.organizationId,
-        },
-      },
-    });
+    // Issue JWT and redirect to dashboard
+    const { ssoLogin } = await import('../../auth/authService.js');
+    const authResult = await ssoLogin(
+      user.email,
+      user.name || null,
+      user.email,
+      user.organizationId,
+    );
+
+    // Redirect to dashboard with the JWT token (the frontend will store it)
+    res.redirect(`/login?sso_token=${encodeURIComponent(authResult.token)}`);
   } catch (error: unknown) {
     const err = error as Error;
 

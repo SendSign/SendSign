@@ -29,16 +29,20 @@ const configSchema = z.object({
   port: z.number().int().positive().default(3000),
   nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
   apiKey: z.string().min(1),
-  baseUrl: z.string().default('http://localhost:3000'),
+  baseUrl: z.string().min(1),
 
   // Database
   databaseUrl: z.string().min(1),
 
-  // Storage (S3-compatible)
-  s3Endpoint: z.string().min(1),
-  s3Bucket: z.string().min(1).default('coseal-documents'),
-  s3AccessKey: z.string().min(1),
-  s3SecretKey: z.string().min(1),
+  // Storage
+  storageType: z.enum(['s3', 'local']).default('local'),
+  storagePath: z.string().default('./storage'),
+
+  // Storage (S3-compatible) - only required when storageType=s3
+  s3Endpoint: z.string().optional(),
+  s3Bucket: z.string().default('coseal-documents'),
+  s3AccessKey: z.string().optional(),
+  s3SecretKey: z.string().optional(),
   s3Region: z.string().default('us-east-1'),
 
   // Encryption
@@ -116,12 +120,14 @@ export function loadConfig(): Config {
     port: envInt('PORT'),
     nodeEnv: env('NODE_ENV'),
     apiKey: env('API_KEY') ?? env('COSEAL_API_KEY'),
-    baseUrl: env('COSEAL_BASE_URL'),
+    baseUrl: env('BASE_URL') ?? env('COSEAL_BASE_URL'),
 
     // Database
     databaseUrl: env('DATABASE_URL'),
 
     // Storage
+    storageType: env('STORAGE_TYPE'),
+    storagePath: env('STORAGE_PATH'),
     s3Endpoint: env('S3_ENDPOINT'),
     s3Bucket: env('S3_BUCKET'),
     s3AccessKey: env('S3_ACCESS_KEY'),
@@ -217,7 +223,24 @@ export function validateConfig(rawConfig: unknown): Config {
     process.exit(1);
   }
 
-  return result.data;
+  const config = result.data;
+
+  // Additional validation: if storageType=s3, require S3 credentials
+  if (config.storageType === 's3') {
+    if (!config.s3Endpoint || !config.s3AccessKey || !config.s3SecretKey) {
+      console.error('╔══════════════════════════════════════════════════╗');
+      console.error('║  CoSeal Configuration Error — Startup Aborted   ║');
+      console.error('╚══════════════════════════════════════════════════╝');
+      console.error('');
+      console.error('STORAGE_TYPE is set to "s3" but S3 credentials are missing.');
+      console.error('Required: S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY');
+      console.error('');
+      console.error('For local development, use STORAGE_TYPE=local instead.');
+      process.exit(1);
+    }
+  }
+
+  return config;
 }
 
 // ─── Singleton ───────────────────────────────────────────────────

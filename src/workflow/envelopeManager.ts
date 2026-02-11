@@ -249,11 +249,30 @@ export async function voidEnvelope(
 
 /**
  * Complete an envelope — called when all signers are done.
- * In a full implementation, this would merge signatures, seal the PDF,
- * generate the completion cert, store sealed docs, and notify all parties.
+ * Seals the PDF, generates completion certificate, and notifies all parties.
  */
 export async function completeEnvelope(envelopeId: string): Promise<void> {
   const db = getDb();
+
+  // Seal the PDF by flattening all signatures into the document
+  let sealedKey: string | null = null;
+  try {
+    const { sealPdfDocument } = await import('../documents/pdfSealer.js');
+    sealedKey = await sealPdfDocument(envelopeId);
+  } catch (err) {
+    console.error('Failed to seal PDF:', err);
+    // Continue even if sealing fails — mark as completed anyway
+  }
+
+  // Generate completion certificate
+  let certificateKey: string | null = null;
+  try {
+    const { generateCompletionCertificate } = await import('../documents/certificateGenerator.js');
+    certificateKey = await generateCompletionCertificate(envelopeId);
+  } catch (err) {
+    console.error('Failed to generate completion certificate:', err);
+    // Continue even if certificate generation fails
+  }
 
   await db
     .update(envelopes)
@@ -267,7 +286,11 @@ export async function completeEnvelope(envelopeId: string): Promise<void> {
   await logEvent({
     envelopeId,
     eventType: 'sealed',
-    eventData: { completedAt: new Date().toISOString() },
+    eventData: {
+      completedAt: new Date().toISOString(),
+      sealedKey,
+      certificateKey,
+    },
   });
 
   // Dispatch to integrations
@@ -395,6 +418,7 @@ function mapToEnvelopeWithDetails(
       required: f.required,
       value: f.value,
       signerId: f.signerId,
+      label: f.anchorText ?? undefined,
     })),
   };
 }

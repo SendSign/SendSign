@@ -11,7 +11,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "test": "vitest"
+    "test": "vitest",
+    "seed-demo": "tsx scripts/seed-demo.ts"
   },
   "keywords": [
     "e-signature",
@@ -28,7 +29,8 @@
     "@googleapis/drive": "^20.1.0",
     "@node-saml/passport-saml": "^5.1.0",
     "@sendgrid/mail": "^8.1.6",
-    "adm-zip": "^0.5.17",
+    "adm-zip": "^0.5.16",
+    "bcryptjs": "^3.0.3",
     "box-node-sdk": "^10.3.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -38,10 +40,11 @@
     "express-rate-limit": "^7.5.0",
     "form-data": "^4.0.5",
     "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "node-cron": "^3.0.3",
     "node-forge": "^1.3.1",
-    "openid-client": "^6.8.2",
+    "openid-client": "^5.7.0",
     "papaparse": "^5.4.1",
     "pdf-lib": "^1.17.1",
     "pg": "^8.13.1",
@@ -51,9 +54,11 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/form-data": "^2.2.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^22.10.5",
     "@types/node-cron": "^3.0.11",

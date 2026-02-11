@@ -5,9 +5,10 @@ import { validateToken } from '../../ceremony/tokenGenerator.js';
 import { getEnvelope } from '../../workflow/envelopeManager.js';
 import { canSignerSign } from '../../workflow/signingOrder.js';
 import { getDb } from '../../db/connection.js';
-import { signers, fields, comments } from '../../db/schema.js';
+import { envelopes, signers, fields, documents, comments } from '../../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { logEvent } from '../../audit/auditLogger.js';
+import { downloadDocument } from '../../storage/documentStore.js';
 
 const router = Router();
 
@@ -92,6 +93,78 @@ router.get('/:token', async (req, res) => {
 });
 
 /**
+ * GET /api/sign/:token/document
+ * Serve the decrypted PDF for the signing ceremony.
+ * Authenticated by the signing token — no API key required.
+ */
+router.get('/:token/document', async (req, res) => {
+  const tokenResult = await validateToken(req.params.token);
+
+  if (!tokenResult.valid) {
+    res.status(401).json({ success: false, error: tokenResult.reason });
+    return;
+  }
+
+  try {
+    const db = getDb();
+    const envelopeId = tokenResult.signer!.envelopeId;
+
+    // Strategy 1: look in the documents table (multi-document envelopes)
+    const docs = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.envelopeId, envelopeId))
+      .orderBy(documents.order);
+
+    if (docs.length > 0) {
+      const doc = docs[0];
+
+      // If the stored document is not a PDF (e.g., conversion failed at upload),
+      // return a descriptive error instead of serving a broken file
+      if (doc.contentType !== 'application/pdf' && !doc.filename.toLowerCase().endsWith('.pdf')) {
+        res.status(422).json({
+          success: false,
+          error: 'PDF conversion required',
+          detail:
+            `The uploaded document "${doc.filename}" is not a PDF (type: ${doc.contentType}). ` +
+            'Automatic conversion was unavailable at upload time. ' +
+            'Please re-upload the document as a PDF, or install LibreOffice on the server to enable automatic conversion.',
+        });
+        return;
+      }
+
+      const pdfBuffer = await downloadDocument(doc.storagePath);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${doc.filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+      return;
+    }
+
+    // Strategy 2: fall back to envelope.documentKey (seed data, MCP-created envelopes)
+    const [envelope] = await db
+      .select()
+      .from(envelopes)
+      .where(eq(envelopes.id, envelopeId))
+      .limit(1);
+
+    if (envelope?.documentKey) {
+      const pdfBuffer = await downloadDocument(envelope.documentKey);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+      return;
+    }
+
+    res.status(404).json({ success: false, error: 'No documents found for this envelope' });
+  } catch (err) {
+    console.error('Failed to serve document:', err);
+    res.status(500).json({ success: false, error: 'Failed to load document' });
+  }
+});
+
+/**
  * POST /api/sign/:token
  * Submit signed fields.
  */
@@ -116,10 +189,20 @@ router.post('/:token', validate(signFieldSchema), async (req, res) => {
       .where(eq(fields.id, field.fieldId));
   }
 
+  // Capture IP and user agent at signing time if not already captured
+  const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || null;
+  const userAgent = req.headers['user-agent'] || null;
+
   // Update signer status
   await db
     .update(signers)
-    .set({ status: 'completed', signedAt: new Date() })
+    .set({
+      status: 'completed',
+      signedAt: new Date(),
+      // Only update IP/UA if not already set (from consent)
+      ipAddress: ipAddress ? (typeof ipAddress === 'string' ? ipAddress : Array.isArray(ipAddress) ? ipAddress[0] : null) : undefined,
+      userAgent: userAgent || undefined,
+    })
     .where(eq(signers.id, signerId));
 
   // Log audit event
@@ -130,15 +213,27 @@ router.post('/:token', validate(signFieldSchema), async (req, res) => {
     eventData: { fieldCount: req.body.fields.length },
   });
 
+  // Check if all signers have completed — if so, seal the envelope
+  const allSigners = await db.select().from(signers).where(eq(signers.envelopeId, envelopeId));
+  const allComplete = allSigners.every((s) => s.status === 'completed' || s.role !== 'signer');
+
+  if (allComplete) {
+    const { completeEnvelope } = await import('../../workflow/envelopeManager.js');
+    // Complete asynchronously — don't block the signer's response
+    completeEnvelope(envelopeId).catch((err) => {
+      console.error('Failed to complete envelope:', err);
+    });
+  }
+
   // Dispatch to integrations
   const { integrationRegistry } = await import('../../integrations/registry.js');
   const { getEnvelope } = await import('../../workflow/envelopeManager.js');
   const fullEnvelope = await getEnvelope(envelopeId);
   if (fullEnvelope) {
     const signerInfo = {
-      id: signer.id,
-      name: signer.name,
-      email: signer.email,
+      id: tokenResult.signer!.id,
+      name: tokenResult.signer!.name,
+      email: tokenResult.signer!.email,
     };
     await integrationRegistry.dispatchEvent('signerCompleted', {
       envelope: fullEnvelope as any,
@@ -147,6 +242,47 @@ router.post('/:token', validate(signFieldSchema), async (req, res) => {
   }
 
   res.json({ success: true, data: { message: 'Document signed successfully' } });
+});
+
+/**
+ * POST /api/sign/:token/consent
+ * Record e-signature consent
+ */
+router.post('/:token/consent', async (req, res) => {
+  const token = typeof req.params.token === 'string' ? req.params.token : req.params.token[0];
+  const tokenResult = await validateToken(token);
+
+  if (!tokenResult.valid) {
+    res.status(401).json({ success: false, error: tokenResult.reason });
+    return;
+  }
+
+  const db = getDb();
+  const signerId = tokenResult.signer!.id;
+  const { consentedAt, userAgent } = req.body;
+
+  // Get IP address from request
+  const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || null;
+
+  // Update signer with consent information
+  await db
+    .update(signers)
+    .set({
+      consentedAt: consentedAt ? new Date(consentedAt) : new Date(),
+      consentUserAgent: userAgent || null,
+      ipAddress: typeof ipAddress === 'string' ? ipAddress : Array.isArray(ipAddress) ? ipAddress[0] : null,
+    })
+    .where(eq(signers.id, signerId));
+
+  // Log audit event
+  await logEvent({
+    envelopeId: tokenResult.signer!.envelopeId,
+    signerId,
+    eventType: 'consent_given',
+    eventData: { ipAddress, userAgent },
+  });
+
+  res.json({ success: true, data: { message: 'Consent recorded' } });
 });
 
 /**
@@ -514,6 +650,112 @@ router.post('/:token/comments/:commentId/reply', async (req, res) => {
   });
 
   res.status(201).json({ success: true, data: reply });
+});
+
+/**
+ * GET /api/sign/:token/signed-document
+ * Download the sealed (signed) PDF. Token auth only.
+ */
+router.get('/:token/signed-document', async (req, res) => {
+  const token = typeof req.params.token === 'string' ? req.params.token : req.params.token[0];
+  const tokenResult = await validateToken(token);
+
+  if (!tokenResult.valid) {
+    res.status(401).json({ success: false, error: tokenResult.reason });
+    return;
+  }
+
+  const db = getDb();
+  const envelopeId = tokenResult.signer!.envelopeId;
+
+  try {
+    const [envelope] = await db.select().from(envelopes).where(eq(envelopes.id, envelopeId)).limit(1);
+
+    if (!envelope) {
+      res.status(404).json({ success: false, error: 'Envelope not found' });
+      return;
+    }
+
+    if (envelope.status !== 'completed') {
+      res.status(400).json({
+        success: false,
+        error: 'Document not yet completed. Please wait for all signers to finish.',
+      });
+      return;
+    }
+
+    if (!envelope.sealedKey) {
+      res.status(404).json({
+        success: false,
+        error: 'Signed document not found. It may still be processing.',
+      });
+      return;
+    }
+
+    const { downloadDocument } = await import('../../storage/documentStore.js');
+    const pdfBuffer = await downloadDocument(envelope.sealedKey);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="signed_${envelope.subject || 'document'}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Failed to serve signed document:', err);
+    res.status(500).json({ success: false, error: 'Failed to download signed document' });
+  }
+});
+
+/**
+ * GET /api/sign/:token/certificate
+ * Download the completion certificate. Token auth only.
+ */
+router.get('/:token/certificate', async (req, res) => {
+  const token = typeof req.params.token === 'string' ? req.params.token : req.params.token[0];
+  const tokenResult = await validateToken(token);
+
+  if (!tokenResult.valid) {
+    res.status(401).json({ success: false, error: tokenResult.reason });
+    return;
+  }
+
+  const db = getDb();
+  const envelopeId = tokenResult.signer!.envelopeId;
+
+  try {
+    const [envelope] = await db.select().from(envelopes).where(eq(envelopes.id, envelopeId)).limit(1);
+
+    if (!envelope) {
+      res.status(404).json({ success: false, error: 'Envelope not found' });
+      return;
+    }
+
+    if (envelope.status !== 'completed') {
+      res.status(400).json({
+        success: false,
+        error: 'Certificate not yet available. Please wait for all signers to finish.',
+      });
+      return;
+    }
+
+    if (!envelope.completionCertKey) {
+      res.status(404).json({
+        success: false,
+        error: 'Completion certificate not found. It may still be generating.',
+      });
+      return;
+    }
+
+    const { downloadDocument } = await import('../../storage/documentStore.js');
+    const pdfBuffer = await downloadDocument(envelope.completionCertKey);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="certificate_${envelope.subject || 'document'}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Failed to serve certificate:', err);
+    res.status(500).json({ success: false, error: 'Failed to download certificate' });
+  }
 });
 
 export default router;

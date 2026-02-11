@@ -143,6 +143,8 @@ export const signers = pgTable(
     tokenExpiresAt: timestamp('token_expires', { withTimezone: true }),
     signedAt: timestamp('signed_at', { withTimezone: true }),
     signatureImage: text('signature_image'),
+    consentedAt: timestamp('consented_at', { withTimezone: true }),
+    consentUserAgent: text('consent_user_agent'),
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
     geolocation: text('geolocation'),

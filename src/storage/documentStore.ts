@@ -7,6 +7,8 @@ import {
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 import { encrypt, decrypt, pack, unpack, deriveKey } from './encryption.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 export interface UploadMetadata {
   filename?: string;
@@ -16,6 +18,14 @@ export interface UploadMetadata {
 }
 
 let s3Client: S3Client | undefined;
+
+function getStorageType(): 's3' | 'local' {
+  return (process.env.STORAGE_TYPE as 's3' | 'local') ?? 'local';
+}
+
+function getStoragePath(): string {
+  return process.env.STORAGE_PATH ?? './storage';
+}
 
 function getS3(): S3Client {
   if (!s3Client) {
@@ -53,7 +63,7 @@ function getEncryptionKey(): Buffer {
 }
 
 /**
- * Encrypt and upload a document to S3-compatible storage.
+ * Encrypt and upload a document to storage (S3 or local filesystem).
  * Returns the storage key.
  */
 export async function uploadDocument(
@@ -67,39 +77,67 @@ export async function uploadDocument(
   const encResult = await encrypt(data, encKey);
   const packed = pack(encResult);
 
-  // Build S3 metadata (only string values)
-  const s3Meta: Record<string, string> = {};
-  if (metadata) {
-    for (const [k, v] of Object.entries(metadata)) {
-      if (v !== undefined) s3Meta[k] = v;
+  if (getStorageType() === 'local') {
+    // Local filesystem storage
+    const storagePath = getStoragePath();
+    const fullPath = path.join(storagePath, key);
+    const dir = path.dirname(fullPath);
+    
+    // Ensure directory exists
+    await fs.mkdir(dir, { recursive: true });
+    
+    // Write encrypted file
+    await fs.writeFile(fullPath, packed);
+    
+    // Write metadata as JSON sidecar
+    if (metadata) {
+      await fs.writeFile(fullPath + '.meta.json', JSON.stringify(metadata, null, 2));
     }
-  }
+  } else {
+    // S3 storage
+    const s3Meta: Record<string, string> = {};
+    if (metadata) {
+      for (const [k, v] of Object.entries(metadata)) {
+        if (v !== undefined) s3Meta[k] = v;
+      }
+    }
 
-  await getS3().send(
-    new PutObjectCommand({
-      Bucket: getBucket(),
-      Key: key,
-      Body: packed,
-      ContentType: 'application/octet-stream',
-      Metadata: s3Meta,
-    }),
-  );
+    await getS3().send(
+      new PutObjectCommand({
+        Bucket: getBucket(),
+        Key: key,
+        Body: packed,
+        ContentType: 'application/octet-stream',
+        Metadata: s3Meta,
+      }),
+    );
+  }
 
   return key;
 }
 
 /**
- * Download and decrypt a document from S3-compatible storage.
+ * Download and decrypt a document from storage (S3 or local filesystem).
  */
 export async function downloadDocument(key: string): Promise<Buffer> {
-  const response = await getS3().send(
-    new GetObjectCommand({ Bucket: getBucket(), Key: key }),
-  );
+  let packed: Buffer;
 
-  const bodyBytes = await response.Body?.transformToByteArray();
-  if (!bodyBytes) throw new Error(`Empty response for key: ${key}`);
+  if (getStorageType() === 'local') {
+    // Local filesystem storage
+    const storagePath = getStoragePath();
+    const fullPath = path.join(storagePath, key);
+    packed = await fs.readFile(fullPath);
+  } else {
+    // S3 storage
+    const response = await getS3().send(
+      new GetObjectCommand({ Bucket: getBucket(), Key: key }),
+    );
 
-  const packed = Buffer.from(bodyBytes);
+    const bodyBytes = await response.Body?.transformToByteArray();
+    if (!bodyBytes) throw new Error(`Empty response for key: ${key}`);
+    packed = Buffer.from(bodyBytes);
+  }
+
   const { encrypted, iv, tag } = unpack(packed);
   const encKey = getEncryptionKey();
 
@@ -107,18 +145,57 @@ export async function downloadDocument(key: string): Promise<Buffer> {
 }
 
 /**
- * Delete a document from S3-compatible storage.
+ * Delete a document from storage (S3 or local filesystem).
  */
 export async function deleteDocument(key: string): Promise<void> {
-  await getS3().send(
-    new DeleteObjectCommand({ Bucket: getBucket(), Key: key }),
-  );
+  if (getStorageType() === 'local') {
+    // Local filesystem storage
+    const storagePath = getStoragePath();
+    const fullPath = path.join(storagePath, key);
+    
+    try {
+      await fs.unlink(fullPath);
+      // Also delete metadata if exists
+      await fs.unlink(fullPath + '.meta.json').catch(() => {});
+    } catch (error) {
+      // File might not exist - ignore
+    }
+  } else {
+    // S3 storage
+    await getS3().send(
+      new DeleteObjectCommand({ Bucket: getBucket(), Key: key }),
+    );
+  }
 }
 
 /**
  * Generate a pre-signed URL for direct browser access.
+ * For local storage, returns a data URL (base64).
  */
 export async function getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
-  const command = new GetObjectCommand({ Bucket: getBucket(), Key: key });
-  return s3GetSignedUrl(getS3(), command, { expiresIn });
+  if (getStorageType() === 'local') {
+    // For local storage, we can't generate a real signed URL
+    // Instead, return a placeholder or base URL path
+    // In production local mode, you'd serve files via an authenticated endpoint
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    return `${baseUrl}/api/documents/${encodeURIComponent(key)}`;
+  } else {
+    // S3 signed URL
+    const command = new GetObjectCommand({ Bucket: getBucket(), Key: key });
+    return s3GetSignedUrl(getS3(), command, { expiresIn });
+  }
+}
+
+/**
+ * Alias for downloadDocument (for backwards compatibility).
+ */
+export async function retrieveDocument(key: string): Promise<Buffer> {
+  return downloadDocument(key);
+}
+
+/**
+ * Store a document with a specific key (for backwards compatibility).
+ */
+export async function storeDocument(key: string, data: Buffer): Promise<void> {
+  await uploadDocument(data);
 }

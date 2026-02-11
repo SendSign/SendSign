@@ -6,6 +6,10 @@ import { ExpiredPage } from './pages/ExpiredPage';
 import { InPersonPage } from './pages/InPersonPage';
 import { PowerFormPage } from './pages/PowerFormPage';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { PreparePage } from './pages/PreparePage';
+import { DashboardPage } from './pages/DashboardPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 function App() {
   return (
@@ -15,14 +19,19 @@ function App() {
       </a>
       <main id="main-content">
         <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/sign/:token" element={<SigningPage />} />
+          <Route path="/prepare/:envelopeId" element={<PreparePage />} />
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/complete" element={<CompletePage />} />
           <Route path="/expired" element={<ExpiredPage />} />
           <Route path="/in-person/:token" element={<InPersonPage />} />
           <Route path="/powerform/:powerformId" element={<PowerFormPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="*" element={<Navigate to="/expired" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </main>
     </BrowserRouter>
