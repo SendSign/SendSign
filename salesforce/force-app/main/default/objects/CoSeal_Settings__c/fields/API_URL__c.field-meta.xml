@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>API_URL__c</fullName>
-    <description>Base URL of your CoSeal instance (e.g., https://coseal.yourcompany.com)</description>
+    <description>Base URL of your SendSign instance (e.g., https://sendsign.yourcompany.com)</description>
     <externalId>false</externalId>
     <label>API URL</label>
     <length>255</length>

@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Full access to all CoSeal features including configuration, sending, and webhook handling.</description>
+    <description>Full access to all SendSign features including configuration, sending, and webhook handling.</description>
     <hasActivationRequired>false</hasActivationRequired>
-    <label>CoSeal Admin</label>
+    <label>SendSign Admin</label>
     <classAccesses>
-        <apexClass>CoSealService</apexClass>
+        <apexClass>SendSignService</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>CoSealEnvelopeController</apexClass>
+        <apexClass>SendSignEnvelopeController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>CoSealWebhookHandler</apexClass>
+        <apexClass>SendSignWebhookHandler</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>CoSealConfig</apexClass>
+        <apexClass>SendSignConfig</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <fieldPermissions>
         <editable>true</editable>
-        <field>CoSeal_Settings__c.API_URL__c</field>
+        <field>SendSign_Settings__c.API_URL__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>CoSeal_Settings__c.API_Key__c</field>
+        <field>SendSign_Settings__c.API_Key__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>CoSeal_Settings__c.Default_Template__c</field>
+        <field>SendSign_Settings__c.Default_Template__c</field>
         <readable>true</readable>
     </fieldPermissions>
 </PermissionSet>

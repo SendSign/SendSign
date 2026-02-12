@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <customSettingsType>Hierarchy</customSettingsType>
-    <description>CoSeal API connection settings. Configure your CoSeal instance URL, API key, and defaults.</description>
+    <description>SendSign API connection settings. Configure your SendSign instance URL, API key, and defaults.</description>
     <enableFeeds>false</enableFeeds>
-    <label>CoSeal Settings</label>
+    <label>SendSign Settings</label>
     <visibility>Protected</visibility>
 </CustomObject>
