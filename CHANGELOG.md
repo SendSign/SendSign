@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to CoSeal will be documented in this file.
+All notable changes to SendSign will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -23,9 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `GET /api/admin/analytics/templates` — Per-template usage statistics
 - `GET /api/admin/analytics/export` — CSV export for analytics data
 
-#### CoSeal for Salesforce (Step 31)
+#### SendSign for Salesforce (Step 31)
 - Complete Salesforce managed package (`salesforce/` directory)
-- Apex classes: CoSealService, CoSealEnvelopeController, CoSealWebhookHandler, CoSealConfig
+- Apex classes: SendSignService, SendSignEnvelopeController, SendSignWebhookHandler, SendSignConfig
 - LWC components: Send Button, Signing Embed (iframe), Envelope Status, Admin Config
 - Custom settings for API URL/Key, field mapping metadata, permission sets
 - `POST /api/envelopes/:id/embedded-signing` — Embedded signing URL for iframes
@@ -37,10 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `GET /api/admin/branding` — Read branding configuration
 - `PUT /api/admin/branding` — Update branding (requires entitlement)
 - `DELETE /api/admin/branding` — Reset to defaults
-- CoSealBranding.tsx updated for three modes: default, clean white-label, custom
+- SendSignBranding.tsx updated for three modes: default, clean white-label, custom
 - Email templates inject branding variables (logo, colors, footer)
 - Certificate of Completion uses custom company name
-- CSS custom properties for color theming (`--coseal-primary`, etc.)
+- CSS custom properties for color theming (`--sendsign-primary`, etc.)
 - Input validation: hex colors, logo size limits, CSS sanitization
 
 ---
@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Initial Release
 
-CoSeal v1.0.0 is feature-complete and production-ready. This release includes everything needed to replace commercial e-signature platforms like DocuSign with a self-hosted, open-source alternative.
+SendSign v1.0.0 is feature-complete and production-ready. This release includes everything needed to replace commercial e-signature platforms like DocuSign with a self-hosted, open-source alternative.
 
 ### Core Signing Engine
 
@@ -137,7 +137,7 @@ CoSeal v1.0.0 is feature-complete and production-ready. This release includes ev
 
 ### Developer Experience
 
-- ✅ **TypeScript SDK** (`@coseal/sdk`):
+- ✅ **TypeScript SDK** (`@sendsign/sdk`):
   - Node.js and browser support
   - Full type definitions
   - Custom error classes
@@ -191,6 +191,6 @@ CoSeal v1.0.0 is feature-complete and production-ready. This release includes ev
 
 ## Support
 
-- **Documentation:** [https://github.com/coseal/coseal](https://github.com/coseal/coseal)
-- **Issues:** [https://github.com/coseal/coseal/issues](https://github.com/coseal/coseal/issues)
+- **Documentation:** [https://github.com/sendsign/sendsign](https://github.com/sendsign/sendsign)
+- **Issues:** [https://github.com/sendsign/sendsign/issues](https://github.com/sendsign/sendsign/issues)
 - **Enterprise support:** Contact info (TBD)

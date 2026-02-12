@@ -5,7 +5,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
-import { requireFeature } from '../middleware/planEnforcement.js';
+import { requireFeature } from '../../control/services/featureGates.js';
 import {
   getSSOConfig,
   upsertSSOConfig,
@@ -17,10 +17,11 @@ import { logEvent } from '../../audit/auditLogger.js';
 
 const router = express.Router();
 
-// SSO configuration requires Enterprise plan (detect endpoint is open)
-router.post('/configurations', requireFeature('ssoEnabled'));
-router.put('/configurations/:orgId', requireFeature('ssoEnabled'));
-router.delete('/configurations/:orgId', requireFeature('ssoEnabled'));
+// SSO configuration requires White-Label plan
+// These middleware are applied at the top for early rejection
+router.post('/configurations', requireFeature('sso'));
+router.put('/configurations/:orgId', requireFeature('sso'));
+router.delete('/configurations/:orgId', requireFeature('sso'));
 
 // ─── Validation Schemas ─────────────────────────────────────────────
 

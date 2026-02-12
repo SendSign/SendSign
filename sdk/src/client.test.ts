@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CoSealClient } from './client.js';
+import { SendSignClient } from './client.js';
 import {
   AuthenticationError,
   NotFoundError,
@@ -31,8 +31,8 @@ function createMockFetch(response: {
   });
 }
 
-describe('CoSealClient', () => {
-  let client: CoSealClient;
+describe('SendSignClient', () => {
+  let client: SendSignClient;
   let mockFetch: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -45,8 +45,8 @@ describe('CoSealClient', () => {
       }),
     });
 
-    client = new CoSealClient({
-      baseUrl: 'https://coseal.test',
+    client = new SendSignClient({
+      baseUrl: 'https://sendsign.test',
       apiKey: 'test-api-key',
       fetch: mockFetch as unknown as typeof fetch,
     });
@@ -54,15 +54,15 @@ describe('CoSealClient', () => {
 
   describe('constructor', () => {
     it('should require baseUrl', () => {
-      expect(() => new CoSealClient({ baseUrl: '', apiKey: 'key' })).toThrow('baseUrl is required');
+      expect(() => new SendSignClient({ baseUrl: '', apiKey: 'key' })).toThrow('baseUrl is required');
     });
 
     it('should require apiKey', () => {
-      expect(() => new CoSealClient({ baseUrl: 'https://test.com', apiKey: '' })).toThrow('apiKey is required');
+      expect(() => new SendSignClient({ baseUrl: 'https://test.com', apiKey: '' })).toThrow('apiKey is required');
     });
 
     it('should strip trailing slash from baseUrl', () => {
-      const c = new CoSealClient({
+      const c = new SendSignClient({
         baseUrl: 'https://test.com/',
         apiKey: 'key',
         fetch: mockFetch as unknown as typeof fetch,
@@ -76,7 +76,7 @@ describe('CoSealClient', () => {
       await client.getEnvelope('env-123');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://coseal.test/api/envelopes/env-123',
+        'https://sendsign.test/api/envelopes/env-123',
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
@@ -98,7 +98,7 @@ describe('CoSealClient', () => {
       await client.sendEnvelope('env-123');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://coseal.test/api/envelopes/env-123/send',
+        'https://sendsign.test/api/envelopes/env-123/send',
         expect.objectContaining({
           method: 'POST',
         }),
@@ -111,7 +111,7 @@ describe('CoSealClient', () => {
       await client.voidEnvelope('env-123', 'Wrong version');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://coseal.test/api/envelopes/env-123/void',
+        'https://sendsign.test/api/envelopes/env-123/void',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ reason: 'Wrong version' }),
@@ -131,8 +131,8 @@ describe('CoSealClient', () => {
         }),
       });
 
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'key',
         fetch: mockFetch as unknown as typeof fetch,
       });
@@ -167,14 +167,14 @@ describe('CoSealClient', () => {
         }),
       });
 
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'key',
         fetch: mockFetch as unknown as typeof fetch,
       });
 
       const url = await client.getSigningUrl('env-123', 'signer-1');
-      expect(url).toBe('https://coseal.test/sign/tok-abc123');
+      expect(url).toBe('https://sendsign.test/sign/tok-abc123');
     });
 
     it('should throw NotFoundError for unknown signer', async () => {
@@ -187,7 +187,7 @@ describe('CoSealClient', () => {
       await client.registerWebhook('https://myapp.com/webhook', ['envelope.completed']);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://coseal.test/api/webhooks',
+        'https://sendsign.test/api/webhooks',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({
@@ -204,7 +204,7 @@ describe('CoSealClient', () => {
       await client.assignRetentionPolicy('env-123', 'policy-456');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://coseal.test/api/envelopes/env-123/retention',
+        'https://sendsign.test/api/envelopes/env-123/retention',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ policyId: 'policy-456' }),
@@ -218,8 +218,8 @@ describe('CoSealClient', () => {
   describe('error handling', () => {
     it('should throw AuthenticationError on 401', async () => {
       mockFetch = createMockFetch({ ok: false, status: 401 });
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'bad-key',
         fetch: mockFetch as unknown as typeof fetch,
       });
@@ -229,8 +229,8 @@ describe('CoSealClient', () => {
 
     it('should throw NotFoundError on 404', async () => {
       mockFetch = createMockFetch({ ok: false, status: 404 });
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'key',
         fetch: mockFetch as unknown as typeof fetch,
       });
@@ -240,8 +240,8 @@ describe('CoSealClient', () => {
 
     it('should throw ValidationError on 400', async () => {
       mockFetch = createMockFetch({ ok: false, status: 400 });
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'key',
         fetch: mockFetch as unknown as typeof fetch,
       });
@@ -252,8 +252,8 @@ describe('CoSealClient', () => {
     it('should throw RateLimitError on 429', async () => {
       const headers = new Headers({ 'Retry-After': '60' });
       mockFetch = createMockFetch({ ok: false, status: 429, headers });
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'key',
         fetch: mockFetch as unknown as typeof fetch,
       });
@@ -263,8 +263,8 @@ describe('CoSealClient', () => {
 
     it('should throw ServerError on 500', async () => {
       mockFetch = createMockFetch({ ok: false, status: 500 });
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'key',
         fetch: mockFetch as unknown as typeof fetch,
       });
@@ -274,8 +274,8 @@ describe('CoSealClient', () => {
 
     it('should throw NetworkError on fetch failure', async () => {
       mockFetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'key',
         fetch: mockFetch as unknown as typeof fetch,
       });
@@ -285,8 +285,8 @@ describe('CoSealClient', () => {
 
     it('should throw TimeoutError on abort', async () => {
       mockFetch = vi.fn().mockRejectedValue(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
-      client = new CoSealClient({
-        baseUrl: 'https://coseal.test',
+      client = new SendSignClient({
+        baseUrl: 'https://sendsign.test',
         apiKey: 'key',
         timeout: 100,
         fetch: mockFetch as unknown as typeof fetch,

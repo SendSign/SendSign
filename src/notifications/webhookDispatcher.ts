@@ -87,9 +87,9 @@ async function dispatchToWebhook(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CoSeal-Event': event,
-          'X-CoSeal-Signature': signature,
-          'X-CoSeal-Delivery': crypto.randomUUID(),
+          'X-SendSign-Event': event,
+          'X-SendSign-Signature': signature,
+          'X-SendSign-Delivery': crypto.randomUUID(),
         },
         body: payloadStr,
       });

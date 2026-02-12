@@ -1,13 +1,13 @@
 /**
- * Box integration for CoSeal.
+ * Box integration for SendSign.
  * Auto-uploads completed sealed documents to Box.
  */
 
-import type { CoSealIntegration } from './types.js';
+import type { SendSignIntegration } from './types.js';
 import type { Envelope } from '../db/schema.js';
 import { downloadDocument } from '../storage/documentStore.js';
 
-export class BoxIntegration implements CoSealIntegration {
+export class BoxIntegration implements SendSignIntegration {
   readonly name = 'box';
   readonly displayName = 'Box';
   readonly description = 'Automatically upload completed documents to Box';

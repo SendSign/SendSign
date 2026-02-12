@@ -1,6 +1,6 @@
 {
-  "name": "CoSeal — Document Signing",
-  "short_name": "CoSeal",
+  "name": "SendSign — Document Signing",
+  "short_name": "SendSign",
   "description": "Secure, legally-binding electronic document signing",
   "start_url": "/",
   "display": "standalone",

@@ -1,45 +1,125 @@
 version: '3.8'
 
-# Production override for docker-compose.yml
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
-
 services:
-  api:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16-alpine
+    container_name: sendsign-db
+    restart: unless-stopped
     environment:
-      NODE_ENV: production
-      # Use external S3 (AWS, Backblaze, etc.)
-      # S3_ENDPOINT: https://s3.amazonaws.com
-      # S3_REGION: us-east-1
-      # S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-      # S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
-      # S3_BUCKET: ${S3_BUCKET}
-      
-      # Use external PostgreSQL (AWS RDS, managed PostgreSQL, etc.)
-      # DATABASE_URL: postgresql://user:password@rds-host:5432/coseal
-      
-      # Production email/SMS configuration
-      # SENDGRID_API_KEY: ${SENDGRID_API_KEY}
-      # TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
-      # TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-    restart: unless-stopped
-    # TLS termination should be handled by a reverse proxy (nginx, traefik)
-    # or cloud load balancer (AWS ALB, GCP Load Balancer)
-
-  db:
-    # In production, consider using a managed database service
-    # Comment out this service if using external PostgreSQL
-    restart: unless-stopped
+      POSTGRES_DB: sendsign
+      POSTGRES_USER: sendsign
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_in_production}
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    # Optionally disable port exposure if only accessed internally
-    # ports: []
+      - sendsign-db-data:/var/lib/postgresql/data
+    # Don't expose PostgreSQL externally in production
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sendsign"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sendsign-network
 
-  minio:
-    # In production, use real S3 or S3-compatible service
-    # Comment out minio and createbuckets services if using external storage
+  # SendSign application
+  sendsign:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sendsign-app
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://sendsign:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/sendsign
+      
+      # Server
+      NODE_ENV: production
+      PORT: 3000
+      BASE_URL: ${SENDSIGN_BASE_URL:-http://localhost:3000}
+      
+      # Control Plane
+      SENDSIGN_CONTROL_API_KEY: ${SENDSIGN_CONTROL_API_KEY:-ctrl_change_this_in_production}
+      SENDSIGN_BASE_DOMAIN: ${SENDSIGN_BASE_DOMAIN:-sendsign.dev}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-change_this_jwt_secret_in_production_must_be_long_and_random}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change_this_32_byte_hex_encryption_key_in_production}
+      
+      # API Key (legacy compatibility)
+      API_KEY: ${API_KEY:-default_api_key_for_testing}
+      
+      # Signing Certificates
+      SIGNING_CERT_PATH: ${SIGNING_CERT_PATH:-/app/certs/signing-cert.pem}
+      SIGNING_KEY_PATH: ${SIGNING_KEY_PATH:-/app/certs/signing-key.pem}
+      
+      # Storage (local filesystem by default)
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      STORAGE_PATH: /app/storage
+      
+      # Optional: S3 storage
+      # STORAGE_TYPE=s3
+      # S3_BUCKET=${S3_BUCKET}
+      # S3_REGION=${S3_REGION}
+      # S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      # S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      
+      # Optional: Email notifications
+      # SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      # SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}
+      # SENDGRID_FROM_NAME=${SENDGRID_FROM_NAME:-SendSign}
+      
+      # Optional: SMS/WhatsApp
+      # TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      # TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      # TWILIO_PHONE_FROM=${TWILIO_PHONE_FROM}
+      
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      
+      # Document Retention
+      RETENTION_PERIOD_DAYS: 2555
+      REMINDER_INTERVAL_HOURS: 48
+      SIGNING_TOKEN_EXPIRY_HOURS: 72
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+    volumes:
+      # Persistent storage for documents (if using local filesystem)
+      - sendsign-storage:/app/storage
+      # Optional: Mount SSL certificates if needed
+      # - ./certs:/app/certs:ro
+    ports:
+      - "${SENDSIGN_PORT:-3001}:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - sendsign-network
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
 volumes:
-  pgdata:
-    # Use a named volume for persistent storage
-    # In production, consider using a volume driver for backups
+  sendsign-db-data:
+    name: sendsign-db-data
+  sendsign-storage:
+    name: sendsign-storage
+
+networks:
+  sendsign-network:
+    name: sendsign-network
+    driver: bridge

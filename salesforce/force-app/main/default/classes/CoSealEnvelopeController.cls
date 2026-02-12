@@ -1,12 +1,12 @@
 /**
- * CoSealEnvelopeController — Apex controller for Lightning Web Components.
+ * SendSignEnvelopeController — Apex controller for Lightning Web Components.
  * Provides @AuraEnabled methods that LWC components can call.
  */
-public with sharing class CoSealEnvelopeController {
+public with sharing class SendSignEnvelopeController {
 
     /**
      * Send a document for signature from a record page.
-     * Called from the cosealSendButton LWC component.
+     * Called from the sendsignSendButton LWC component.
      */
     @AuraEnabled
     public static String sendForSignature(
@@ -16,8 +16,8 @@ public with sharing class CoSealEnvelopeController {
         String signerName
     ) {
         // Build signer list
-        List<CoSealService.SignerInfo> signers = new List<CoSealService.SignerInfo>();
-        CoSealService.SignerInfo signer = new CoSealService.SignerInfo(signerEmail, signerName);
+        List<SendSignService.SignerInfo> signers = new List<SendSignService.SignerInfo>();
+        SendSignService.SignerInfo signer = new SendSignService.SignerInfo(signerEmail, signerName);
         signers.add(signer);
 
         // Get field mappings for this template
@@ -25,14 +25,14 @@ public with sharing class CoSealEnvelopeController {
         Map<String, String> mergeData = new Map<String, String>();
 
         if (!fieldMapping.isEmpty()) {
-            mergeData = CoSealService.buildMergeData(recordId, fieldMapping);
+            mergeData = SendSignService.buildMergeData(recordId, fieldMapping);
         }
 
         // Create and send envelope
-        String envelopeId = CoSealService.sendForSignature(recordId, templateId, signers, mergeData);
+        String envelopeId = SendSignService.sendForSignature(recordId, templateId, signers, mergeData);
 
         // Optionally send it immediately
-        CoSealService.sendEnvelope(envelopeId);
+        SendSignService.sendEnvelope(envelopeId);
 
         return envelopeId;
     }
@@ -42,7 +42,7 @@ public with sharing class CoSealEnvelopeController {
      */
     @AuraEnabled
     public static String getSigningUrl(String envelopeId, String signerEmail) {
-        return CoSealService.getEmbeddedSigningUrl(envelopeId, signerEmail);
+        return SendSignService.getEmbeddedSigningUrl(envelopeId, signerEmail);
     }
 
     /**
@@ -50,7 +50,7 @@ public with sharing class CoSealEnvelopeController {
      */
     @AuraEnabled(cacheable=true)
     public static Map<String, Object> getStatus(String envelopeId) {
-        return CoSealService.getEnvelopeStatus(envelopeId);
+        return SendSignService.getEnvelopeStatus(envelopeId);
     }
 
     /**
@@ -58,7 +58,7 @@ public with sharing class CoSealEnvelopeController {
      */
     @AuraEnabled
     public static Boolean sendReminder(String envelopeId, String signerEmail) {
-        return CoSealService.sendReminder(envelopeId, signerEmail);
+        return SendSignService.sendReminder(envelopeId, signerEmail);
     }
 
     /**
@@ -66,7 +66,7 @@ public with sharing class CoSealEnvelopeController {
      */
     @AuraEnabled
     public static Boolean voidEnvelope(String envelopeId, String reason) {
-        return CoSealService.voidEnvelope(envelopeId, reason);
+        return SendSignService.voidEnvelope(envelopeId, reason);
     }
 
     /**
@@ -74,7 +74,7 @@ public with sharing class CoSealEnvelopeController {
      */
     @AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> getTemplates() {
-        return CoSealService.listTemplates();
+        return SendSignService.listTemplates();
     }
 
     /**
@@ -82,7 +82,7 @@ public with sharing class CoSealEnvelopeController {
      */
     @AuraEnabled
     public static String downloadDocument(String envelopeId) {
-        Blob pdfBlob = CoSealService.downloadSealedDocument(envelopeId);
+        Blob pdfBlob = SendSignService.downloadSealedDocument(envelopeId);
         return EncodingUtil.base64Encode(pdfBlob);
     }
 
@@ -95,16 +95,16 @@ public with sharing class CoSealEnvelopeController {
         Map<String, String> mappings = new Map<String, String>();
 
         // Query custom metadata for field mappings
-        // In a real deployment, this would query CoSeal_Field_Mapping__mdt
+        // In a real deployment, this would query SendSign_Field_Mapping__mdt
         // For now, return default mappings based on common patterns
-        List<CoSeal_Field_Mapping__mdt> fieldMappings = [
-            SELECT Salesforce_Field__c, CoSeal_Merge_Field__c
-            FROM CoSeal_Field_Mapping__mdt
+        List<SendSign_Field_Mapping__mdt> fieldMappings = [
+            SELECT Salesforce_Field__c, SendSign_Merge_Field__c
+            FROM SendSign_Field_Mapping__mdt
             WHERE Template_Id__c = :templateId OR Template_Id__c = 'All'
         ];
 
-        for (CoSeal_Field_Mapping__mdt fm : fieldMappings) {
-            mappings.put(fm.Salesforce_Field__c, fm.CoSeal_Merge_Field__c);
+        for (SendSign_Field_Mapping__mdt fm : fieldMappings) {
+            mappings.put(fm.Salesforce_Field__c, fm.SendSign_Merge_Field__c);
         }
 
         return mappings;

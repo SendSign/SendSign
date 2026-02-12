@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: coseal
+  name: sendsign
   labels:
-    app.kubernetes.io/name: coseal
-    app.kubernetes.io/part-of: coseal
+    app.kubernetes.io/name: sendsign
+    app.kubernetes.io/part-of: sendsign

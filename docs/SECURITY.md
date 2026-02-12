@@ -1,12 +1,12 @@
-# CoSeal Security Documentation
+# SendSign Security Documentation
 
-This document outlines CoSeal's security architecture, best practices, and guidelines for secure deployment.
+This document outlines SendSign's security architecture, best practices, and guidelines for secure deployment.
 
 ---
 
 ## Security Model
 
-CoSeal follows a **defense-in-depth** approach with multiple layers of security:
+SendSign follows a **defense-in-depth** approach with multiple layers of security:
 
 1. **Encryption at rest** — Documents are encrypted before storage
 2. **Encryption in transit** — TLS for all network communications
@@ -56,7 +56,7 @@ const result = Buffer.concat([iv, authTag, encrypted]);
 **Protocol:** TLS 1.2 or 1.3
 
 **Implementation:**
-- CoSeal does **not** handle TLS termination directly
+- SendSign does **not** handle TLS termination directly
 - Use a reverse proxy (Nginx, Traefik) or cloud load balancer
 - Enforce HTTPS for all connections
 
@@ -67,8 +67,8 @@ server {
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
   ssl_prefer_server_ciphers on;
-  ssl_certificate /etc/ssl/certs/coseal.crt;
-  ssl_certificate_key /etc/ssl/private/coseal.key;
+  ssl_certificate /etc/ssl/certs/sendsign.crt;
+  ssl_certificate_key /etc/ssl/private/sendsign.key;
 }
 ```
 
@@ -146,7 +146,7 @@ openssl rand -hex 32
 
 ## Identity Verification
 
-CoSeal supports multiple levels of identity verification:
+SendSign supports multiple levels of identity verification:
 
 ### None (Default)
 - **Verification:** Email address only
@@ -211,7 +211,7 @@ curl -H "Authorization: Bearer <api-key>" \
 
 ## Rate Limiting
 
-CoSeal implements rate limiting to protect against abuse and denial-of-service attacks.
+SendSign implements rate limiting to protect against abuse and denial-of-service attacks.
 
 **Limits:**
 - **API endpoints:** 100 requests per minute per IP
@@ -239,7 +239,7 @@ export const apiRateLimiter = rateLimit({
 
 **DDoS protection:**
 - For production, use a cloud-based DDoS protection service (Cloudflare, AWS Shield)
-- CoSeal's rate limiting is a first layer, not a complete DDoS solution
+- SendSign's rate limiting is a first layer, not a complete DDoS solution
 
 ---
 
@@ -279,7 +279,7 @@ const createEnvelopeSchema = z.object({
 
 ## Secure Defaults
 
-CoSeal ships with secure defaults:
+SendSign ships with secure defaults:
 
 | Setting                      | Default                                         | Rationale                                           |
 |------------------------------|-------------------------------------------------|-----------------------------------------------------|
@@ -297,10 +297,10 @@ CoSeal ships with secure defaults:
 
 **Responsible Disclosure Policy**
 
-If you discover a security vulnerability in CoSeal, please report it responsibly:
+If you discover a security vulnerability in SendSign, please report it responsibly:
 
 1. **Do NOT** open a public GitHub issue
-2. Email: **security@coseal.dev** (or use GitHub Security Advisories)
+2. Email: **security@sendsign.dev** (or use GitHub Security Advisories)
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
@@ -355,7 +355,7 @@ If you discover a security vulnerability in CoSeal, please report it responsibly
 
 ## Compliance
 
-CoSeal's security features help meet requirements for:
+SendSign's security features help meet requirements for:
 
 - **SOC 2 Type II** (security controls)
 - **ISO 27001** (information security management)
@@ -376,7 +376,7 @@ Future security enhancements:
 - [ ] **OAuth 2.0 / OIDC** for user authentication (in addition to API keys)
 - [ ] **Role-based access control (RBAC)** for multi-tenant deployments
 - [ ] **Advanced threat detection** using machine learning
-- [ ] **Zero-knowledge encryption** (end-to-end encryption where CoSeal never sees plaintext)
+- [ ] **Zero-knowledge encryption** (end-to-end encryption where SendSign never sees plaintext)
 - [ ] **FIDO2 / WebAuthn** for passwordless authentication
 - [ ] **Security audit** by a third-party firm
 - [ ] **Penetration testing** program
@@ -387,7 +387,7 @@ Future security enhancements:
 
 For security-related questions (non-vulnerabilities):
 
-- **GitHub Discussions**: [https://github.com/coseal/coseal/discussions](https://github.com/coseal/coseal/discussions)
-- **Email**: security@coseal.dev
+- **GitHub Discussions**: [https://github.com/sendsign/sendsign/discussions](https://github.com/sendsign/sendsign/discussions)
+- **Email**: security@sendsign.dev
 
 For vulnerability reports, use the responsible disclosure process described above.

@@ -6,7 +6,7 @@
  * - A qualified signature creation device (QSCD)
  * - Identity verification meeting eIDAS standards
  *
- * CoSeal integrates with external TSPs to request qualified certificates on behalf of signers.
+ * SendSign integrates with external TSPs to request qualified certificates on behalf of signers.
  */
 
 // ─── Types ──────────────────────────────────────────────────────────

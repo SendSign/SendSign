@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 /**
- * Comprehensive end-to-end integration test for CoSeal v1.0.0
+ * Comprehensive end-to-end integration test for SendSign v1.0.0
  * Tests the complete system with all enterprise and ecosystem features.
  */
 
@@ -67,7 +67,7 @@ async function ensureCerts() {
     if (!fs.existsSync(certsDir)) {
       fs.mkdirSync(certsDir, { recursive: true });
     }
-    const { cert, privateKey } = await generateSelfSignedCert('CoSeal Test CA');
+    const { cert, privateKey } = await generateSelfSignedCert('SendSign Test CA');
     fs.writeFileSync(certPath, cert);
     fs.writeFileSync(keyPath, privateKey);
   }
@@ -224,7 +224,7 @@ async function testWebhook() {
 
   try {
     const registerRes = await apiCall('POST', '/api/webhooks', {
-      url: 'https://webhook.site/test-coseal-e2e',
+      url: 'https://webhook.site/test-sendsign-e2e',
       events: ['envelope.completed'],
     });
     if (!registerRes.success) throw new Error('Failed to register webhook');
@@ -433,7 +433,7 @@ async function testVoidEnvelope() {
 
 async function main() {
   console.log('╔═══════════════════════════════════════════════════════════╗');
-  console.log('║  CoSeal v1.0.0 — Comprehensive E2E Integration Test      ║');
+  console.log('║  SendSign v1.0.0 — Comprehensive E2E Integration Test      ║');
   console.log('╚═══════════════════════════════════════════════════════════╝');
   console.log(`API Base: ${API_BASE}`);
   console.log('');
@@ -461,7 +461,7 @@ async function main() {
   console.log('');
 
   if (testsFailed === 0) {
-    console.log('🎉 All tests passed — CoSeal v1.0.0 is ready to ship!');
+    console.log('🎉 All tests passed — SendSign v1.0.0 is ready to ship!');
     process.exit(0);
   } else {
     console.log('❌ Some tests failed — please fix before shipping');

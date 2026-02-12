@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CoSealBranding } from '../components/CoSealBranding';
+import { SendSignBranding } from '../components/SendSignBranding';
 
 export function PowerFormPage() {
   const { powerformId } = useParams<{ powerformId: string }>();
@@ -115,7 +115,7 @@ export function PowerFormPage() {
           </div>
         </div>
       </div>
-      <CoSealBranding />
+      <SendSignBranding />
     </div>
   );
 }

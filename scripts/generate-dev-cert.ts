@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 /**
- * Generate a self-signed certificate for CoSeal development.
+ * Generate a self-signed certificate for SendSign development.
  * Usage: npx tsx scripts/generate-dev-cert.ts
  */
 
@@ -19,7 +19,7 @@ async function main() {
   const certPath = path.join(certsDir, 'signing-cert.pem');
   const keyPath = path.join(certsDir, 'signing-key.pem');
 
-  console.log('Generating self-signed certificate for CoSeal development...');
+  console.log('Generating self-signed certificate for SendSign development...');
   const { privateKey, certificate } = await generateSelfSignedCert();
 
   fs.writeFileSync(certPath, certificate, 'utf-8');

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CoSealBranding } from '../components/CoSealBranding';
+import { SendSignBranding } from '../components/SendSignBranding';
 
 type Step = 'confirm' | 'signing' | 'handoff';
 
@@ -35,7 +35,7 @@ export function InPersonPage() {
             </p>
           </div>
         </div>
-        <CoSealBranding />
+        <SendSignBranding />
       </div>
     );
   }
@@ -76,7 +76,7 @@ export function InPersonPage() {
           </div>
         </div>
       </div>
-      <CoSealBranding />
+      <SendSignBranding />
     </div>
   );
 }

@@ -1,13 +1,13 @@
 /**
- * CoSealService — Core service class for CoSeal API integration.
+ * SendSignService — Core service class for SendSign API integration.
  * Handles HTTP callouts for envelope creation, status tracking, and merge data.
  */
-public with sharing class CoSealService {
+public with sharing class SendSignService {
 
     /**
      * Create and send an envelope from a Salesforce record.
      * @param recordId  The Salesforce record ID to link the envelope to
-     * @param templateId  The CoSeal template UUID
+     * @param templateId  The SendSign template UUID
      * @param signers  List of signer information
      * @param mergeData  Map of merge field names to values
      * @return The created envelope ID
@@ -18,7 +18,7 @@ public with sharing class CoSealService {
         List<SignerInfo> signers,
         Map<String, String> mergeData
     ) {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         String endpoint = settings.API_URL__c + '/api/envelopes/generate';
 
         HttpRequest req = new HttpRequest();
@@ -37,7 +37,7 @@ public with sharing class CoSealService {
                 'salesforce_record_id' => String.valueOf(recordId),
                 'salesforce_object_type' => recordId.getSObjectType().getDescribe().getName()
             },
-            'webhookUrl' => URL.getOrgDomainUrl().toExternalForm() + '/services/apexrest/coseal/webhook'
+            'webhookUrl' => URL.getOrgDomainUrl().toExternalForm() + '/services/apexrest/sendsign/webhook'
         };
 
         req.setBody(JSON.serialize(body));
@@ -50,17 +50,17 @@ public with sharing class CoSealService {
             Map<String, Object> data = (Map<String, Object>) result.get('data');
             return (String) data.get('envelopeId');
         } else {
-            throw new CoSealException('Failed to create envelope: ' + res.getBody());
+            throw new SendSignException('Failed to create envelope: ' + res.getBody());
         }
     }
 
     /**
      * Send envelope for signing (send an already-created envelope).
-     * @param envelopeId  The CoSeal envelope UUID
+     * @param envelopeId  The SendSign envelope UUID
      * @return true if sent successfully
      */
     public static Boolean sendEnvelope(String envelopeId) {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         String endpoint = settings.API_URL__c + '/api/envelopes/' + envelopeId + '/send';
 
         HttpRequest req = new HttpRequest();
@@ -77,12 +77,12 @@ public with sharing class CoSealService {
 
     /**
      * Get embedded signing URL for iframe-based signing within Salesforce.
-     * @param envelopeId  The CoSeal envelope UUID
+     * @param envelopeId  The SendSign envelope UUID
      * @param signerEmail  The email of the signer to create a signing URL for
      * @return Signing URL that can be loaded in an iframe
      */
     public static String getEmbeddedSigningUrl(String envelopeId, String signerEmail) {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         String endpoint = settings.API_URL__c + '/api/envelopes/' + envelopeId + '/embedded-signing';
 
         HttpRequest req = new HttpRequest();
@@ -105,17 +105,17 @@ public with sharing class CoSealService {
             Map<String, Object> data = (Map<String, Object>) result.get('data');
             return (String) data.get('url');
         } else {
-            throw new CoSealException('Failed to get signing URL: ' + res.getBody());
+            throw new SendSignException('Failed to get signing URL: ' + res.getBody());
         }
     }
 
     /**
-     * Get envelope status from CoSeal API.
-     * @param envelopeId  The CoSeal envelope UUID
+     * Get envelope status from SendSign API.
+     * @param envelopeId  The SendSign envelope UUID
      * @return Map containing envelope status data
      */
     public static Map<String, Object> getEnvelopeStatus(String envelopeId) {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         String endpoint = settings.API_URL__c + '/api/envelopes/' + envelopeId;
 
         HttpRequest req = new HttpRequest();
@@ -130,17 +130,17 @@ public with sharing class CoSealService {
             Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             return (Map<String, Object>) result.get('data');
         } else {
-            throw new CoSealException('Failed to get envelope status: ' + res.getBody());
+            throw new SendSignException('Failed to get envelope status: ' + res.getBody());
         }
     }
 
     /**
      * Download the sealed PDF for a completed envelope.
-     * @param envelopeId  The CoSeal envelope UUID
+     * @param envelopeId  The SendSign envelope UUID
      * @return PDF file as a Blob
      */
     public static Blob downloadSealedDocument(String envelopeId) {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         String endpoint = settings.API_URL__c + '/api/envelopes/' + envelopeId + '/download';
 
         HttpRequest req = new HttpRequest();
@@ -154,14 +154,14 @@ public with sharing class CoSealService {
         if (res.getStatusCode() == 200) {
             return res.getBodyAsBlob();
         } else {
-            throw new CoSealException('Failed to download document: ' + res.getBody());
+            throw new SendSignException('Failed to download document: ' + res.getBody());
         }
     }
 
     /**
      * Auto-populate merge data from a Salesforce record using field mappings.
      * @param recordId  The Salesforce record ID
-     * @param fieldMapping  Map of Salesforce field API names to CoSeal merge field names
+     * @param fieldMapping  Map of Salesforce field API names to SendSign merge field names
      * @return Map of merge field names to values
      */
     public static Map<String, String> buildMergeData(Id recordId, Map<String, String> fieldMapping) {
@@ -184,12 +184,12 @@ public with sharing class CoSealService {
 
     /**
      * Send a signing reminder to a pending signer.
-     * @param envelopeId  The CoSeal envelope UUID
+     * @param envelopeId  The SendSign envelope UUID
      * @param signerEmail  The email of the signer to remind
      * @return true if reminder sent successfully
      */
     public static Boolean sendReminder(String envelopeId, String signerEmail) {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         String endpoint = settings.API_URL__c + '/api/envelopes/' + envelopeId + '/remind';
 
         HttpRequest req = new HttpRequest();
@@ -211,12 +211,12 @@ public with sharing class CoSealService {
 
     /**
      * Void (cancel) an in-progress envelope.
-     * @param envelopeId  The CoSeal envelope UUID
+     * @param envelopeId  The SendSign envelope UUID
      * @param reason  The reason for voiding
      * @return true if voided successfully
      */
     public static Boolean voidEnvelope(String envelopeId, String reason) {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         String endpoint = settings.API_URL__c + '/api/envelopes/' + envelopeId + '/void';
 
         HttpRequest req = new HttpRequest();
@@ -237,11 +237,11 @@ public with sharing class CoSealService {
     }
 
     /**
-     * List available templates from CoSeal.
+     * List available templates from SendSign.
      * @return List of template maps with id and name
      */
     public static List<Map<String, Object>> listTemplates() {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         String endpoint = settings.API_URL__c + '/api/templates';
 
         HttpRequest req = new HttpRequest();
@@ -256,7 +256,7 @@ public with sharing class CoSealService {
             Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             return (List<Map<String, Object>>) result.get('data');
         } else {
-            throw new CoSealException('Failed to list templates: ' + res.getBody());
+            throw new SendSignException('Failed to list templates: ' + res.getBody());
         }
     }
 
@@ -278,5 +278,5 @@ public with sharing class CoSealService {
         }
     }
 
-    public class CoSealException extends Exception {}
+    public class SendSignException extends Exception {}
 }

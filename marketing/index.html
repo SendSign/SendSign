@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SendSign — E-signatures for the AI era</title>
+  
+  <!-- Open Graph meta tags for social sharing -->
+  <meta property="og:title" content="SendSign — E-signatures for the AI era">
+  <meta property="og:description" content="The first e-signature platform built for AI agents. Self-host free or $29/mo.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sendsign.dev">
+  <!-- og:image to be added later -->
+  
+  <meta name="description" content="The first e-signature platform built for AI agents. Send documents for signing from Cowork, any MCP client, or the API. Self-host free or let us run it for $29/mo.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #1e293b;
+      background: #ffffff;
+    }
+    
+    /* Header */
+    header {
+      background: #0f172a;
+      color: white;
+      padding: 20px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      text-decoration: none;
+    }
+    
+    nav {
+      display: flex;
+      gap: 30px;
+    }
+    
+    nav a {
+      color: #cbd5e1;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    
+    nav a:hover {
+      color: white;
+    }
+    
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: white;
+      padding: 100px 20px;
+      text-align: center;
+    }
+    
+    .hero-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 56px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+    
+    .hero p {
+      font-size: 20px;
+      color: #cbd5e1;
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+    
+    .cta-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #1d4ed8;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: white;
+      border: 2px solid white;
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    /* Section styles */
+    section {
+      padding: 80px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h2 {
+      font-size: 40px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .section-subtitle {
+      text-align: center;
+      font-size: 18px;
+      color: #64748b;
+      margin-bottom: 60px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    /* How it works */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 40px;
+      margin-top: 60px;
+    }
+    
+    .step {
+      text-align: center;
+      padding: 30px;
+    }
+    
+    .step-number {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      background: #2563eb;
+      color: white;
+      border-radius: 50%;
+      line-height: 50px;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    
+    .step h3 {
+      font-size: 22px;
+      margin-bottom: 12px;
+      color: #1e293b;
+    }
+    
+    .step p {
+      color: #64748b;
+      font-size: 16px;
+    }
+    
+    /* Features Grid */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 40px;
+      margin-top: 60px;
+    }
+    
+    .feature-card {
+      background: #f8fafc;
+      padding: 40px;
+      border-radius: 12px;
+      border-left: 4px solid #2563eb;
+    }
+    
+    .feature-card h3 {
+      font-size: 22px;
+      margin-bottom: 12px;
+      color: #1e293b;
+    }
+    
+    .feature-card p {
+      color: #64748b;
+      font-size: 16px;
+    }
+    
+    /* Pricing Section */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 40px;
+      margin-top: 60px;
+    }
+    
+    .pricing-card {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 40px;
+      position: relative;
+    }
+    
+    .pricing-card.featured {
+      border-color: #2563eb;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1);
+    }
+    
+    .plan-name {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #1e293b;
+    }
+    
+    .plan-price {
+      font-size: 48px;
+      font-weight: 700;
+      color: #2563eb;
+      margin-bottom: 20px;
+    }
+    
+    .plan-price .period {
+      font-size: 18px;
+      color: #64748b;
+      font-weight: 500;
+    }
+    
+    .plan-features {
+      list-style: none;
+      margin: 30px 0;
+    }
+    
+    .plan-features li {
+      padding: 10px 0;
+      color: #475569;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .plan-features li::before {
+      content: "✓";
+      color: #10b981;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    
+    .pricing-note {
+      text-align: center;
+      margin-top: 40px;
+      color: #64748b;
+      font-size: 14px;
+    }
+    
+    /* Open Source Section */
+    .open-source {
+      background: #f8fafc;
+    }
+    
+    .code-block {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      overflow-x: auto;
+      margin: 30px auto;
+      max-width: 600px;
+    }
+    
+    .github-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 18px;
+    }
+    
+    .github-link:hover {
+      text-decoration: underline;
+    }
+    
+    /* Footer */
+    footer {
+      background: #0f172a;
+      color: #cbd5e1;
+      padding: 60px 20px 30px;
+      text-align: center;
+    }
+    
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .footer-logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 30px;
+    }
+    
+    .footer-links {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+    
+    .footer-links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .footer-links a:hover {
+      color: white;
+    }
+    
+    .footer-tagline {
+      margin-bottom: 20px;
+      color: #64748b;
+    }
+    
+    .footer-copyright {
+      color: #64748b;
+      font-size: 14px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 40px;
+      }
+      
+      h2 {
+        font-size: 32px;
+      }
+      
+      .hero p {
+        font-size: 18px;
+      }
+      
+      section {
+        padding: 60px 20px;
+      }
+      
+      .steps, .features, .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      nav {
+        display: none;
+      }
+      
+      .cta-buttons {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+    }
+    
+    /* Smooth scroll */
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-container">
+      <a href="#" class="logo">SendSign</a>
+      <nav>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#open-source">Open Source</a>
+        <a href="https://github.com/sendsign/sendsign">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-container">
+      <h1>E-signatures for the AI era</h1>
+      <p>The first e-signature platform built for AI agents. Send documents for signing from Cowork, any MCP client, or the API. Self-host free or let us run it for $29/mo.</p>
+      <div class="cta-buttons">
+        <button class="btn btn-primary" id="get-started-btn">Get Started — $29/mo</button>
+        <a href="https://github.com/sendsign/sendsign" class="btn btn-secondary">Self-Host Free</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Install the Cowork plugin</h3>
+        <p>Download the plugin, drag it into Cowork. Takes 30 seconds.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Tell Claude to send it</h3>
+        <p>"Send this NDA to jane@acme.com for signature" — that's it.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Track and download</h3>
+        <p>Get notified when it's signed. Download the completed document with full audit trail.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Built for AI Agents -->
+  <section id="features">
+    <h2>Built for AI agents</h2>
+    <p class="section-subtitle">SendSign is the first e-signature platform designed for AI agents, not web forms.</p>
+    <div class="features">
+      <div class="feature-card">
+        <h3>MCP Native</h3>
+        <p>Works with Cowork, Claude Code, and any MCP-compatible client out of the box.</p>
+      </div>
+      <div class="feature-card">
+        <h3>API First</h3>
+        <p>3 endpoints to send, track, and download. No OAuth flows or complex setup.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Template Learning</h3>
+        <p>Place fields once, it's a template forever. AI handles the rest.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing">
+    <h2>Pricing</h2>
+    <div class="pricing-grid">
+      <!-- Self-Hosted -->
+      <div class="pricing-card">
+        <div class="plan-name">Self-Hosted</div>
+        <div class="plan-price">Free</div>
+        <ul class="plan-features">
+          <li>Open source (AGPL-3.0)</li>
+          <li>Unlimited envelopes</li>
+          <li>Unlimited users</li>
+          <li>Full API + MCP + webhooks</li>
+          <li>Templates</li>
+          <li>"Powered by SendSign" badge</li>
+          <li>Community support (GitHub)</li>
+        </ul>
+        <a href="https://github.com/sendsign/sendsign" class="btn btn-secondary" style="width: 100%;">View on GitHub</a>
+      </div>
+      
+      <!-- Managed -->
+      <div class="pricing-card featured">
+        <div class="plan-name">Managed</div>
+        <div class="plan-price">$29<span class="period">/mo</span></div>
+        <ul class="plan-features">
+          <li>Everything in Self-Hosted</li>
+          <li>We host and maintain it</li>
+          <li>Up to 5 users</li>
+          <li>Automatic updates</li>
+          <li>30-day audit log</li>
+          <li>Email support</li>
+        </ul>
+        <button class="btn btn-primary get-started-btn" style="width: 100%;">Get Started</button>
+      </div>
+    </div>
+    <p class="pricing-note">Need white-label, SSO, or enterprise compliance? <a href="mailto:hello@sendsign.dev" style="color: #2563eb;">Contact us</a> for custom pricing.</p>
+  </section>
+
+  <!-- Open Source -->
+  <section id="open-source" class="open-source">
+    <h2>Open Source</h2>
+    <p class="section-subtitle">SendSign is open source under AGPL-3.0. View the code, self-host it, contribute.</p>
+    <div class="code-block">$ docker compose up</div>
+    <div style="text-align: center;">
+      <a href="https://github.com/sendsign/sendsign" class="github-link">
+        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        View on GitHub
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-logo">SendSign</div>
+      <div class="footer-links">
+        <a href="https://github.com/sendsign/sendsign">GitHub</a>
+        <a href="https://docs.sendsign.dev">Documentation</a>
+        <a href="#pricing">Pricing</a>
+        <a href="mailto:hello@sendsign.dev">Contact</a>
+      </div>
+      <p class="footer-tagline">Built for Cowork by SendSign</p>
+      <p class="footer-copyright">© 2026 SendSign. Open source under AGPL-3.0.</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript for Get Started button -->
+  <script>
+    // Handle Get Started button clicks
+    const getStartedButtons = document.querySelectorAll('.get-started-btn, #get-started-btn');
+    
+    getStartedButtons.forEach(button => {
+      button.addEventListener('click', async () => {
+        // Prompt for email and tenant slug
+        const email = prompt('Enter your email address:');
+        if (!email) return;
+        
+        const tenantSlug = prompt('Choose a subdomain (lowercase, alphanumeric + hyphens):');
+        if (!tenantSlug) return;
+        
+        // Disable button and show loading state
+        button.disabled = true;
+        button.textContent = 'Creating checkout session...';
+        
+        try {
+          // Call checkout endpoint
+          const response = await fetch('/api/billing/checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: email,
+              tenantSlug: tenantSlug,
+            }),
+          });
+          
+          const data = await response.json();
+          
+          if (data.success && data.data.url) {
+            // Redirect to Stripe checkout
+            window.location.href = data.data.url;
+          } else {
+            alert('Error: ' + (data.error || 'Failed to create checkout session'));
+            button.disabled = false;
+            button.textContent = 'Get Started';
+          }
+        } catch (error) {
+          alert('Error: Failed to connect to server');
+          button.disabled = false;
+          button.textContent = 'Get Started';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,10 +1,10 @@
 /**
- * Standard integration interface for CoSeal ecosystem connectors.
+ * Standard integration interface for SendSign ecosystem connectors.
  */
 
 import type { Envelope } from '../db/schema.js';
 
-export interface CoSealIntegration {
+export interface SendSignIntegration {
   /** Integration name (unique identifier) */
   readonly name: string;
 

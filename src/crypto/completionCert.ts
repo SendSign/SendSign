@@ -126,8 +126,8 @@ export async function generateCompletionCertificate(
   };
 
   // ─── Load Branding Config (Step 32) ───
-  let brandCompanyName = 'CoSeal';
-  let brandTagline = 'Powered by CoSeal — Open Source E-Signature Engine';
+  let brandCompanyName = 'SendSign';
+  let brandTagline = 'Powered by SendSign — Open Source E-Signature Engine';
   try {
     const { getDb } = await import('../db/connection.js');
     const { brandingConfigs } = await import('../db/schema.js');

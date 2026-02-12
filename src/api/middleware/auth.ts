@@ -63,14 +63,14 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
   }
 
   // First try single-tenant mode (env var API key)
-  const envApiKey = process.env.API_KEY ?? process.env.COSEAL_API_KEY;
+  const envApiKey = process.env.API_KEY ?? process.env.SENDSIGN_API_KEY;
 
   if (envApiKey && token === envApiKey) {
     // Single-tenant mode — authenticated without org context
     (req as AuthenticatedRequest).authenticated = true;
 
-    // Resolve user from COSEAL_ADMIN_EMAIL or default to admin
-    resolveOrCreateUser(req, process.env.COSEAL_ADMIN_EMAIL || 'admin@coseal.local', 'admin')
+    // Resolve user from SENDSIGN_ADMIN_EMAIL or default to admin
+    resolveOrCreateUser(req, process.env.SENDSIGN_ADMIN_EMAIL || 'admin@sendsign.local', 'admin')
       .then(() => next())
       .catch(() => next()); // Proceed even if user resolution fails
     return;
@@ -101,7 +101,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
       (req as AuthenticatedRequest).authenticated = true;
 
       // Resolve user for this org (use token owner or default)
-      await resolveOrCreateUser(req, org.ownerEmail || 'admin@coseal.local', 'admin', org.id);
+      await resolveOrCreateUser(req, org.ownerEmail || 'admin@sendsign.local', 'admin', org.id);
 
       next();
     })
@@ -199,9 +199,22 @@ async function resolveOrCreateUser(
     }
 
     // Auto-create user on first use
+    // Lookup tenantId from organization or use default
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+    let tenantId = DEFAULT_TENANT_ID;
+    if (organizationId) {
+      const [org] = await db
+        .select({ tenantId: organizations.tenantId })
+        .from(organizations)
+        .where(eq(organizations.id, organizationId))
+        .limit(1);
+      tenantId = org?.tenantId || DEFAULT_TENANT_ID;
+    }
+    
     const [newUser] = await db
       .insert(users)
       .values({
+        tenantId,
         email,
         name: email.split('@')[0],
         role: defaultRole,
@@ -245,7 +258,7 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction): v
   }
 
   if (token) {
-    const apiKey = process.env.API_KEY ?? process.env.COSEAL_API_KEY;
+    const apiKey = process.env.API_KEY ?? process.env.SENDSIGN_API_KEY;
 
     if (token === apiKey) {
       (req as AuthenticatedRequest).authenticated = true;

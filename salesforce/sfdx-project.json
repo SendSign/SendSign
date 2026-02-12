@@ -3,12 +3,12 @@
     {
       "path": "force-app",
       "default": true,
-      "package": "CoSeal",
+      "package": "SendSign",
       "versionName": "Version 1.0",
       "versionNumber": "1.0.0.NEXT"
     }
   ],
-  "name": "coseal-salesforce",
+  "name": "sendsign-salesforce",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "59.0",

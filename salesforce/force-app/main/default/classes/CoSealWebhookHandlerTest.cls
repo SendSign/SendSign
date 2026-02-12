@@ -1,15 +1,15 @@
 /**
- * CoSealWebhookHandlerTest — Tests for inbound webhook processing.
+ * SendSignWebhookHandlerTest — Tests for inbound webhook processing.
  * Verifies document attachment, status updates, and signature validation.
  */
 @isTest
-private class CoSealWebhookHandlerTest {
+private class SendSignWebhookHandlerTest {
 
     @TestSetup
     static void setupData() {
         // Create custom settings
-        CoSeal_Settings__c settings = new CoSeal_Settings__c(
-            API_URL__c = 'https://coseal.example.com',
+        SendSign_Settings__c settings = new SendSign_Settings__c(
+            API_URL__c = 'https://sendsign.example.com',
             API_Key__c = 'test-api-key-12345'
         );
         insert settings;
@@ -53,14 +53,14 @@ private class CoSealWebhookHandlerTest {
         RestRequest req = new RestRequest();
         req.requestBody = Blob.valueOf(JSON.serialize(payload));
         req.httpMethod = 'POST';
-        req.requestURI = '/services/apexrest/coseal/webhook';
+        req.requestURI = '/services/apexrest/sendsign/webhook';
 
         RestResponse res = new RestResponse();
         RestContext.request = req;
         RestContext.response = res;
 
         Test.startTest();
-        CoSealWebhookHandler.handleWebhook();
+        SendSignWebhookHandler.handleWebhook();
         Test.stopTest();
 
         System.assertEquals(200, RestContext.response.statusCode, 'Should return 200');
@@ -93,14 +93,14 @@ private class CoSealWebhookHandlerTest {
         RestRequest req = new RestRequest();
         req.requestBody = Blob.valueOf(JSON.serialize(payload));
         req.httpMethod = 'POST';
-        req.requestURI = '/services/apexrest/coseal/webhook';
+        req.requestURI = '/services/apexrest/sendsign/webhook';
 
         RestResponse res = new RestResponse();
         RestContext.request = req;
         RestContext.response = res;
 
         Test.startTest();
-        CoSealWebhookHandler.handleWebhook();
+        SendSignWebhookHandler.handleWebhook();
         Test.stopTest();
 
         System.assertEquals(200, RestContext.response.statusCode, 'Should return 200');
@@ -125,14 +125,14 @@ private class CoSealWebhookHandlerTest {
         RestRequest req = new RestRequest();
         req.requestBody = Blob.valueOf(JSON.serialize(payload));
         req.httpMethod = 'POST';
-        req.requestURI = '/services/apexrest/coseal/webhook';
+        req.requestURI = '/services/apexrest/sendsign/webhook';
 
         RestResponse res = new RestResponse();
         RestContext.request = req;
         RestContext.response = res;
 
         Test.startTest();
-        CoSealWebhookHandler.handleWebhook();
+        SendSignWebhookHandler.handleWebhook();
         Test.stopTest();
 
         System.assertEquals(200, RestContext.response.statusCode, 'Should return 200');
@@ -153,14 +153,14 @@ private class CoSealWebhookHandlerTest {
         RestRequest req = new RestRequest();
         req.requestBody = Blob.valueOf(JSON.serialize(payload));
         req.httpMethod = 'POST';
-        req.requestURI = '/services/apexrest/coseal/webhook';
+        req.requestURI = '/services/apexrest/sendsign/webhook';
 
         RestResponse res = new RestResponse();
         RestContext.request = req;
         RestContext.response = res;
 
         Test.startTest();
-        CoSealWebhookHandler.handleWebhook();
+        SendSignWebhookHandler.handleWebhook();
         Test.stopTest();
 
         System.assertEquals(200, RestContext.response.statusCode, 'Should return 200 with no-op');
@@ -178,14 +178,14 @@ private class CoSealWebhookHandlerTest {
         RestRequest req = new RestRequest();
         req.requestBody = Blob.valueOf(JSON.serialize(payload));
         req.httpMethod = 'POST';
-        req.requestURI = '/services/apexrest/coseal/webhook';
+        req.requestURI = '/services/apexrest/sendsign/webhook';
 
         RestResponse res = new RestResponse();
         RestContext.request = req;
         RestContext.response = res;
 
         Test.startTest();
-        CoSealWebhookHandler.handleWebhook();
+        SendSignWebhookHandler.handleWebhook();
         Test.stopTest();
 
         System.assertEquals(400, RestContext.response.statusCode, 'Should return 400 for missing data');

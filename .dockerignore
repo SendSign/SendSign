@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+signing-ui/node_modules/
+mcp-server/node_modules/
+sdk/node_modules/
+
+# Build outputs (will be built in Docker)
+dist/
+signing-ui/dist/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.example
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Documentation (keep README.md)
+*.md
+!README.md
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+test/
+*.test.ts
+*.spec.ts
+**/__tests__/
+**/__mocks__/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Misc
+.prettierrc
+.eslintrc*
+.editorconfig
+tsconfig.json
+vitest.config.ts
+
+# Verification files (created during development)
+*_VERIFICATION.md
+*_COMPLETE.md
+*_STATUS.md
+*_NOTES.md
+
+# Storage (will be created at runtime)
+storage/

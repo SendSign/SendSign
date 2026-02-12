@@ -107,7 +107,7 @@ async function convertToPdfWithLibreOffice(
 
   // Create a unique temp directory for this conversion to avoid conflicts
   // when multiple conversions run concurrently
-  const tmpDir = path.join(os.tmpdir(), `coseal-convert-${uuidv4()}`);
+  const tmpDir = path.join(os.tmpdir(), `sendsign-convert-${uuidv4()}`);
   await fs.mkdir(tmpDir, { recursive: true });
 
   const ext = path.extname(originalFilename) || '.docx';

@@ -1,9 +1,9 @@
 /**
- * Integrations module — ecosystem connectors for CoSeal.
+ * Integrations module — ecosystem connectors for SendSign.
  * @module integrations
  */
 
-export type { CoSealIntegration, IntegrationConfig } from './types.js';
+export type { SendSignIntegration, IntegrationConfig } from './types.js';
 export { integrationRegistry } from './registry.js';
 export { SlackIntegration } from './slack.js';
 export { BoxIntegration } from './box.js';

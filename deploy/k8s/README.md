@@ -1,6 +1,6 @@
-# CoSeal — Raw Kubernetes Manifests
+# SendSign — Raw Kubernetes Manifests
 
-Minimal Kubernetes manifests for deploying CoSeal without Helm.
+Minimal Kubernetes manifests for deploying SendSign without Helm.
 
 ## Prerequisites
 
@@ -14,11 +14,11 @@ Minimal Kubernetes manifests for deploying CoSeal without Helm.
 ### 1. Create secrets
 
 ```bash
-kubectl create namespace coseal
+kubectl create namespace sendsign
 
-kubectl create secret generic coseal-secrets \
-  --namespace coseal \
-  --from-literal=DATABASE_URL="postgresql://coseal:password@db-host:5432/coseal" \
+kubectl create secret generic sendsign-secrets \
+  --namespace sendsign \
+  --from-literal=DATABASE_URL="postgresql://sendsign:password@db-host:5432/sendsign" \
   --from-literal=ENCRYPTION_KEY="your-32-character-encryption-key" \
   --from-literal=API_KEY="your-api-key"
 ```
@@ -46,9 +46,9 @@ kubectl apply -f ingress.yaml
 ### 4. Verify
 
 ```bash
-kubectl get pods -n coseal
-kubectl get svc -n coseal
-kubectl get ingress -n coseal
+kubectl get pods -n sendsign
+kubectl get svc -n sendsign
+kubectl get ingress -n sendsign
 ```
 
 ## Production Recommendations
@@ -61,4 +61,4 @@ For production, consider using the **Helm chart** instead, which provides:
 - External secrets support
 - Templated configuration
 
-See `deploy/helm/coseal/README.md` for details.
+See `deploy/helm/sendsign/README.md` for details.

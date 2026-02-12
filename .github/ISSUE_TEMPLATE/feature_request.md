@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a new feature or enhancement for CoSeal
+about: Suggest a new feature or enhancement for SendSign
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
@@ -26,7 +26,7 @@ Have you considered any alternative solutions or workarounds? If so, please desc
 
 ## Benefits
 
-Who would benefit from this feature? How would it improve CoSeal?
+Who would benefit from this feature? How would it improve SendSign?
 
 ## Implementation Suggestions
 

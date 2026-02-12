@@ -19,6 +19,7 @@ import {
   fields,
   organizations,
   apiKeys,
+  tenants,
 } from '../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -106,9 +107,39 @@ async function createSamplePDF(): Promise<Buffer> {
 // ─── Main Seed Function ─────────────────────────────────────────────
 
 async function seedDemo() {
-  console.log('🌱 Starting CoSeal demo seed...\n');
+  console.log('🌱 Starting SendSign demo seed...\n');
 
   const db = getDb();
+
+  // ── 0. Default Tenant ─────────────────────────────────────────────
+
+  const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+  console.log('🏢 Ensuring default tenant exists...');
+  let tenant;
+  const existingTenants = await db.select().from(tenants).where(eq(tenants.id, DEFAULT_TENANT_ID)).limit(1);
+
+  if (existingTenants.length > 0) {
+    tenant = existingTenants[0];
+    console.log(`   Using existing: ${tenant.name} (${tenant.id})`);
+  } else {
+    [tenant] = await db
+      .insert(tenants)
+      .values({
+        id: DEFAULT_TENANT_ID,
+        name: 'Default Tenant',
+        slug: 'default',
+        plan: 'enterprise',
+        status: 'active',
+        envelopeLimit: 999999,
+        userLimit: 999999,
+        templateLimit: 999999,
+        bulkSendLimit: 999999,
+        auditRetentionDays: 365,
+        licenseType: 'agpl',
+      })
+      .returning();
+    console.log(`   Created: ${tenant.name} (${tenant.id})`);
+  }
 
   // ── 1. Organization ─────────────────────────────────────────────
 
@@ -123,10 +154,11 @@ async function seedDemo() {
     [org] = await db
       .insert(organizations)
       .values({
+        tenantId: DEFAULT_TENANT_ID,
         name: 'Demo Company',
         slug: 'demo-company',
         plan: 'pro',
-        billingEmail: 'admin@demo.coseal.local',
+        billingEmail: 'admin@demo.sendsign.local',
       })
       .returning();
     console.log(`   Created: ${org.name} (${org.id})`);
@@ -154,12 +186,13 @@ async function seedDemo() {
     console.log('   If you forgot the raw key, delete api_keys rows and re-run.');
     rawApiKey = '(existing — see above)';
   } else {
-    rawApiKey = `coseal_${uuidv4().replace(/-/g, '')}`;
+    rawApiKey = `sendsign_${uuidv4().replace(/-/g, '')}`;
     const keyHash = hashApiKey(rawApiKey);
 
     await db
       .insert(apiKeys)
       .values({
+        tenantId: DEFAULT_TENANT_ID,
         organizationId: org.id,
         keyHash,
         name: 'Demo API Key',
@@ -188,13 +221,14 @@ async function seedDemo() {
   const [envelope] = await db
     .insert(envelopes)
     .values({
+      tenantId: DEFAULT_TENANT_ID,
       organizationId: org.id,
       subject: 'Demo NDA — Please Review and Sign',
       message:
         'Please review this Non-Disclosure Agreement and sign if you agree to the terms.',
       status: 'sent',
       signingOrder: 'sequential',
-      createdBy: 'admin@demo.coseal.local',
+      createdBy: 'admin@demo.sendsign.local',
       sentAt: new Date(),
     })
     .returning();
@@ -206,6 +240,7 @@ async function seedDemo() {
   const [doc] = await db
     .insert(documents)
     .values({
+      tenantId: DEFAULT_TENANT_ID,
       envelopeId: envelope.id,
       filename: 'NDA_Agreement.pdf',
       contentType: 'application/pdf',
@@ -227,6 +262,7 @@ async function seedDemo() {
   const [signer] = await db
     .insert(signers)
     .values({
+      tenantId: DEFAULT_TENANT_ID,
       envelopeId: envelope.id,
       name: signerName,
       email: signerEmail,
@@ -249,6 +285,7 @@ async function seedDemo() {
   console.log('\n📝 Adding signature fields...');
   await db.insert(fields).values([
     {
+      tenantId: DEFAULT_TENANT_ID,
       envelopeId: envelope.id,
       documentId: doc.id,
       signerId: signer.id,
@@ -261,6 +298,7 @@ async function seedDemo() {
       required: true,
     },
     {
+      tenantId: DEFAULT_TENANT_ID,
       envelopeId: envelope.id,
       documentId: doc.id,
       signerId: signer.id,
@@ -273,6 +311,7 @@ async function seedDemo() {
       required: true,
     },
     {
+      tenantId: DEFAULT_TENANT_ID,
       envelopeId: envelope.id,
       documentId: doc.id,
       signerId: signer.id,
@@ -285,6 +324,7 @@ async function seedDemo() {
       required: true,
     },
     {
+      tenantId: DEFAULT_TENANT_ID,
       envelopeId: envelope.id,
       documentId: doc.id,
       signerId: signer.id,

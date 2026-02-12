@@ -25,7 +25,7 @@ describe('ssoConfig', () => {
         'saml',
         {
           entryPoint: 'https://idp.example.com/sso',
-          issuer: 'coseal',
+          issuer: 'sendsign',
           cert: 'mock-cert',
           allowedDomains: ['example.com'],
         },

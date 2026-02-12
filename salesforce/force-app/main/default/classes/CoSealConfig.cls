@@ -1,29 +1,29 @@
 /**
- * CoSealConfig — Accessor for CoSeal custom settings.
- * Provides a clean API for reading and validating CoSeal configuration.
+ * SendSignConfig — Accessor for SendSign custom settings.
+ * Provides a clean API for reading and validating SendSign configuration.
  */
-public with sharing class CoSealConfig {
+public with sharing class SendSignConfig {
 
     /**
-     * Get the CoSeal API URL from custom settings.
-     * @return The base API URL (e.g., https://coseal.example.com)
+     * Get the SendSign API URL from custom settings.
+     * @return The base API URL (e.g., https://sendsign.example.com)
      */
     public static String getApiUrl() {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         if (settings == null || String.isBlank(settings.API_URL__c)) {
-            throw new ConfigException('CoSeal API URL is not configured. Go to Setup → Custom Settings → CoSeal Settings.');
+            throw new ConfigException('SendSign API URL is not configured. Go to Setup → Custom Settings → SendSign Settings.');
         }
         return settings.API_URL__c;
     }
 
     /**
-     * Get the CoSeal API key from custom settings.
+     * Get the SendSign API key from custom settings.
      * @return The API key for authentication
      */
     public static String getApiKey() {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         if (settings == null || String.isBlank(settings.API_Key__c)) {
-            throw new ConfigException('CoSeal API Key is not configured. Go to Setup → Custom Settings → CoSeal Settings.');
+            throw new ConfigException('SendSign API Key is not configured. Go to Setup → Custom Settings → SendSign Settings.');
         }
         return settings.API_Key__c;
     }
@@ -33,23 +33,23 @@ public with sharing class CoSealConfig {
      * @return The default template UUID, or null if not configured
      */
     public static String getDefaultTemplate() {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         return settings != null ? settings.Default_Template__c : null;
     }
 
     /**
-     * Check if CoSeal is properly configured.
+     * Check if SendSign is properly configured.
      * @return true if API URL and API Key are both set
      */
     public static Boolean isConfigured() {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         return settings != null
             && String.isNotBlank(settings.API_URL__c)
             && String.isNotBlank(settings.API_Key__c);
     }
 
     /**
-     * Test the connection to the CoSeal API.
+     * Test the connection to the SendSign API.
      * @return Map with 'connected' boolean and optional 'error' string
      */
     @AuraEnabled
@@ -58,12 +58,12 @@ public with sharing class CoSealConfig {
 
         if (!isConfigured()) {
             result.put('connected', false);
-            result.put('error', 'CoSeal is not configured. Set API URL and API Key in Custom Settings.');
+            result.put('error', 'SendSign is not configured. Set API URL and API Key in Custom Settings.');
             return result;
         }
 
         try {
-            CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+            SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
             HttpRequest req = new HttpRequest();
             req.setEndpoint(settings.API_URL__c + '/api/health');
             req.setMethod('GET');
@@ -88,13 +88,13 @@ public with sharing class CoSealConfig {
     }
 
     /**
-     * Save CoSeal settings.
+     * Save SendSign settings.
      */
     @AuraEnabled
     public static void saveSettings(String apiUrl, String apiKey, String defaultTemplate) {
-        CoSeal_Settings__c settings = CoSeal_Settings__c.getOrgDefaults();
+        SendSign_Settings__c settings = SendSign_Settings__c.getOrgDefaults();
         if (settings == null) {
-            settings = new CoSeal_Settings__c();
+            settings = new SendSign_Settings__c();
         }
 
         settings.API_URL__c = apiUrl;

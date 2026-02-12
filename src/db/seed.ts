@@ -1,5 +1,5 @@
 /**
- * CoSeal Database Seed Script
+ * SendSign Database Seed Script
  *
  * Creates sample data for development:
  * - 1 completed envelope with 2 signers, fields, and audit events
@@ -64,12 +64,12 @@ const ids = {
 
 export async function seedDatabase(): Promise<void> {
   const connectionString =
-    process.env.DATABASE_URL || 'postgresql://coseal:password@localhost:5432/coseal';
+    process.env.DATABASE_URL || 'postgresql://sendsign:password@localhost:5432/sendsign';
 
   const pool = new Pool({ connectionString });
   const db = drizzle(pool);
 
-  console.log('Seeding CoSeal database...\n');
+  console.log('Seeding SendSign database...\n');
 
   try {
     // Clear existing data in correct order (respect foreign keys)
@@ -93,7 +93,7 @@ export async function seedDatabase(): Promise<void> {
       documentKey: 'docs/completed/msa-acme.pdf',
       sealedKey: 'docs/completed/msa-acme-sealed.pdf',
       completionCertKey: 'docs/completed/msa-acme-cert.pdf',
-      createdBy: 'admin@coseal.dev',
+      createdBy: 'admin@sendsign.dev',
       createdAt: hoursAgo(72),
       updatedAt: hoursAgo(1),
       sentAt: hoursAgo(71),
@@ -115,7 +115,7 @@ export async function seedDatabase(): Promise<void> {
         id: ids.signer1a,
         envelopeId: ids.envelope1,
         name: 'Alice Johnson',
-        email: 'alice@coseal.dev',
+        email: 'alice@sendsign.dev',
         role: 'signer',
         order: 1,
         status: 'signed',
@@ -284,7 +284,7 @@ export async function seedDatabase(): Promise<void> {
       status: 'in_progress',
       signingOrder: 'sequential',
       documentKey: 'docs/pending/nda-phoenix.pdf',
-      createdBy: 'admin@coseal.dev',
+      createdBy: 'admin@sendsign.dev',
       expiresAt: hoursFromNow(48),
       createdAt: hoursAgo(24),
       updatedAt: hoursAgo(6),
@@ -306,7 +306,7 @@ export async function seedDatabase(): Promise<void> {
         id: ids.signer2a,
         envelopeId: ids.envelope2,
         name: 'Carol Wei',
-        email: 'carol@coseal.dev',
+        email: 'carol@sendsign.dev',
         role: 'signer',
         order: 1,
         status: 'signed',
@@ -479,7 +479,7 @@ export async function seedDatabase(): Promise<void> {
         { role: 'party_a', name: 'Disclosing Party', order: 1 },
         { role: 'party_b', name: 'Receiving Party', order: 2 },
       ]),
-      createdBy: 'admin@coseal.dev',
+      createdBy: 'admin@sendsign.dev',
     });
 
     console.log('\n✅ Seed data created successfully!');

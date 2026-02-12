@@ -1,10 +1,12 @@
 /**
  * Plan tier enforcement middleware.
- * Checks organization plan limits before allowing certain operations.
+ * Checks tenant plan limits before allowing certain operations.
  */
 
 import type { Request, Response, NextFunction } from 'express';
 import type { AuthenticatedRequest, OrganizationContext } from './auth.js';
+import type { TenantRequest } from './tenantContext.js';
+import { checkLimit } from '../../control/services/usageMeter.js';
 
 // ─── Plan Definitions ───────────────────────────────────────────────
 
@@ -66,36 +68,43 @@ export function getPlanTier(org: OrganizationContext | null): PlanTier {
 
 /**
  * Middleware: Check envelope creation limits.
- * Must be placed after authenticate middleware.
+ * Must be placed after authenticate and tenantContext middleware.
  */
-export function enforceEnvelopeLimit(req: Request, res: Response, next: NextFunction): void {
-  const authReq = req as AuthenticatedRequest;
-  const org = authReq.organization;
+export async function enforceEnvelopeLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const tenantReq = req as TenantRequest;
+  const tenant = tenantReq.tenant;
 
-  // Single-tenant mode — no limits
-  if (!org) {
+  // Single-tenant mode or no tenant context — no limits
+  if (!tenant || !tenant.id) {
     next();
     return;
   }
 
-  const plan = getPlanTier(org);
+  try {
+    const result = await checkLimit(tenant.id, 'envelopes');
 
-  // Check monthly limit
-  if (plan.envelopeLimit !== null && org.envelopesUsed >= plan.envelopeLimit) {
-    res.status(429).json({
-      success: false,
-      error: `Monthly envelope limit reached (${plan.envelopeLimit} envelopes on ${plan.name} plan). Upgrade to increase your limit.`,
-      data: {
-        plan: org.plan,
-        limit: plan.envelopeLimit,
-        used: org.envelopesUsed,
-        upgradeUrl: '/pricing',
-      },
-    });
-    return;
+    if (!result.allowed) {
+      const baseDomain = process.env.SENDSIGN_BASE_DOMAIN || 'sendsign.dev';
+      res.status(429).json({
+        success: false,
+        error: 'Monthly envelope limit reached',
+        message: result.message,
+        data: {
+          plan: tenant.plan,
+          limit: result.limit,
+          used: result.current,
+          upgradeUrl: `https://${tenant.slug}.${baseDomain}/admin/billing`,
+        },
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error('Error checking envelope limit:', error);
+    // Fail open — don't block on errors
+    next();
   }
-
-  next();
 }
 
 /**

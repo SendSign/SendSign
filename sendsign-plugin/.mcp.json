@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "sendsign-service": {
+      "type": "http",
+      "url": "${SENDSIGN_SERVICE_URL:-http://localhost:3000}",
+      "description": "SendSign signing service — handles document prep, signing ceremony, crypto sealing, and audit trail",
+      "auth": {
+        "type": "bearer",
+        "token": "${SENDSIGN_API_KEY}"
+      }
+    }
+  }
+}

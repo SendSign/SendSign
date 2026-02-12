@@ -118,7 +118,7 @@ export function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">CoSeal Analytics</h1>
+          <h1 className="text-3xl font-bold text-gray-900">SendSign Analytics</h1>
           <p className="mt-2 text-gray-600">Signing activity and statistics</p>
 
           {/* Period selector */}

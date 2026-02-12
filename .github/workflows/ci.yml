@@ -41,9 +41,9 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: coseal
+          POSTGRES_USER: sendsign
           POSTGRES_PASSWORD: password
-          POSTGRES_DB: coseal
+          POSTGRES_DB: sendsign
         ports:
           - 5432:5432
         options: >-
@@ -80,12 +80,12 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_URL: postgresql://coseal:password@localhost:5432/coseal
+          DATABASE_URL: postgresql://sendsign:password@localhost:5432/sendsign
           S3_ENDPOINT: http://localhost:9000
           S3_REGION: us-east-1
           S3_ACCESS_KEY_ID: minioadmin
           S3_SECRET_ACCESS_KEY: minioadmin
-          S3_BUCKET: coseal-documents
+          S3_BUCKET: sendsign-documents
           ENCRYPTION_KEY: test-encryption-key-at-least-32-characters-long
           API_KEY: test-api-key
           NODE_ENV: test
@@ -157,7 +157,7 @@ jobs:
           version: 'v3.14.0'
 
       - name: Lint Helm chart
-        run: helm lint deploy/helm/coseal/
+        run: helm lint deploy/helm/sendsign/
 
   validate-terraform:
     name: Validate Terraform
@@ -205,7 +205,7 @@ jobs:
       - name: Start services with docker-compose
         run: docker-compose up -d
         env:
-          DATABASE_URL: postgresql://coseal:password@localhost:5432/coseal
+          DATABASE_URL: postgresql://sendsign:password@localhost:5432/sendsign
           API_KEY: test-api-key
           ENCRYPTION_KEY: test-encryption-key-at-least-32-characters
 
@@ -240,7 +240,7 @@ jobs:
         with:
           context: .
           push: false
-          tags: coseal/coseal:latest
+          tags: sendsign/sendsign:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -264,4 +264,4 @@ jobs:
             echo "One or more checks failed"
             exit 1
           fi
-          echo "✅ All checks passed — CoSeal v1.0.0 is ready to ship!"
+          echo "✅ All checks passed — SendSign v1.0.0 is ready to ship!"

@@ -7,6 +7,8 @@ import { getDb } from '../../db/connection.js';
 import { envelopes, signers, auditEvents, users, templates, brandingConfigs } from '../../db/schema.js';
 import { sql, desc, gte, and, eq } from 'drizzle-orm';
 import { requireRole, requirePermission } from '../middleware/rbac.js';
+import { checkLimit } from '../../control/services/usageMeter.js';
+import { requireFeature, hasFeature, getAuditRetentionDays } from '../../control/services/featureGates.js';
 
 const router = express.Router();
 
@@ -329,7 +331,7 @@ router.get('/analytics/export', async (req, res) => {
       }
 
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename=coseal-analytics-${type}-${Date.now()}.csv`);
+      res.setHeader('Content-Disposition', `attachment; filename=sendsign-analytics-${type}-${Date.now()}.csv`);
       res.send(csvContent);
     } else if (format === 'pdf') {
       // For PDF export, return a simple message (full PDF generation would require pdfkit or similar)
@@ -378,6 +380,8 @@ router.get('/users', requireRole('admin'), async (req, res) => {
 /**
  * POST /api/admin/users
  * Create a new user (admin only).
+ * 
+ * Note: Custom roles beyond 'admin', 'sender', 'viewer' require white-label plan.
  */
 router.post('/users', requireRole('admin'), async (req, res) => {
   const { email, name, role, organizationId } = req.body;
@@ -386,15 +390,52 @@ router.post('/users', requireRole('admin'), async (req, res) => {
     return res.status(400).json({ success: false, error: 'email is required' });
   }
 
-  const validRoles = ['admin', 'sender', 'viewer'];
-  if (role && !validRoles.includes(role)) {
-    return res.status(400).json({
-      success: false,
-      error: `Invalid role. Must be one of: ${validRoles.join(', ')}`,
-    });
+  // Basic roles available to all plans
+  const basicRoles = ['admin', 'sender', 'viewer'];
+  
+  // If a custom role is requested, check plan tier
+  if (role && !basicRoles.includes(role)) {
+    // Custom role — requires white-label plan
+    if (!hasFeature(req.tenant?.plan || 'free', 'custom_rbac')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Custom roles are not available on your plan',
+        message: 'Custom RBAC roles require the White-Label plan. Contact enterprise@sendsign.dev for pricing.',
+        availableRoles: basicRoles,
+        currentPlan: req.tenant?.plan || 'free',
+      });
+    }
+  }
+  
+  // Validate role format if custom
+  if (role && !basicRoles.includes(role)) {
+    // Custom role validation
+    if (!/^[a-z_]+$/.test(role) || role.length > 50) {
+      return res.status(400).json({
+        success: false,
+        error: 'Custom role must be lowercase letters and underscores, max 50 characters',
+      });
+    }
   }
 
   const db = getDb();
+
+  // Check user limit
+  if (req.tenant?.id) {
+    const limitCheck = await checkLimit(req.tenant.id, 'users');
+    if (!limitCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: 'User limit reached',
+        message: limitCheck.message,
+        data: {
+          plan: req.tenant.plan,
+          limit: limitCheck.limit,
+          used: limitCheck.current,
+        },
+      });
+    }
+  }
 
   // Check for existing user
   const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -405,6 +446,7 @@ router.post('/users', requireRole('admin'), async (req, res) => {
   const [newUser] = await db
     .insert(users)
     .values({
+      tenantId: req.tenant!.id,
       email,
       name: name || email.split('@')[0],
       role: role || 'sender',
@@ -517,15 +559,20 @@ router.get('/users/:id', requireRole('admin'), async (req, res) => {
  * Check if branding entitlement is active.
  */
 function checkBrandingEntitlement(): boolean {
-  return !!process.env.COSEAL_BRANDING_ENTITLEMENT;
+  return !!process.env.SENDSIGN_BRANDING_ENTITLEMENT;
 }
 
 /**
  * GET /api/admin/branding
  * Get the current branding configuration.
+ * 
+ * entitlementActive is set to true only for white-label tenants.
  */
 router.get('/branding', async (req, res) => {
   const db = getDb();
+
+  // Check if tenant has white-label branding feature
+  const canRemoveBadge = hasFeature(req.tenant?.plan || 'free', 'custom_branding');
 
   // Get branding config for the organization (or default)
   const configs = await db.select().from(brandingConfigs).limit(1);
@@ -538,14 +585,14 @@ router.get('/branding', async (req, res) => {
         primaryColor: '#2563EB',
         secondaryColor: '#1E40AF',
         accentColor: '#3B82F6',
-        companyName: 'CoSeal',
+        companyName: 'SendSign',
         emailFooter: null,
         signingHeader: null,
         logoUrl: null,
         faviconUrl: null,
         customCss: null,
         isDefault: true,
-        entitlementActive: checkBrandingEntitlement(),
+        entitlementActive: canRemoveBadge, // Only white-label can remove badge
       },
     });
   }
@@ -558,7 +605,7 @@ router.get('/branding', async (req, res) => {
       primaryColor: config.primaryColor,
       secondaryColor: config.secondaryColor,
       accentColor: config.accentColor,
-      companyName: config.companyName || 'CoSeal',
+      companyName: config.companyName || 'SendSign',
       emailFooter: config.emailFooter,
       signingHeader: config.signingHeader,
       logoUrl: config.logoUrl,
@@ -566,22 +613,16 @@ router.get('/branding', async (req, res) => {
       faviconUrl: config.faviconUrl,
       customCss: config.customCss,
       isDefault: false,
-      entitlementActive: checkBrandingEntitlement(),
+      entitlementActive: canRemoveBadge, // Only white-label can remove badge
     },
   });
 });
 
 /**
  * PUT /api/admin/branding
- * Update branding configuration (requires entitlement).
+ * Update branding configuration (requires white-label plan).
  */
-router.put('/branding', requireRole('admin'), async (req, res) => {
-  if (!checkBrandingEntitlement()) {
-    return res.status(403).json({
-      success: false,
-      error: 'Branding customization requires the COSEAL_BRANDING_ENTITLEMENT key. Contact sales.',
-    });
-  }
+router.put('/branding', requireRole('admin'), requireFeature('custom_branding'), async (req, res) => {
 
   const {
     primaryColor,
@@ -652,7 +693,10 @@ router.put('/branding', requireRole('admin'), async (req, res) => {
   } else {
     [config] = await db
       .insert(brandingConfigs)
-      .values(configData)
+      .values({
+        tenantId: req.tenant!.id,
+        ...configData,
+      })
       .returning();
   }
 
@@ -661,20 +705,84 @@ router.put('/branding', requireRole('admin'), async (req, res) => {
 
 /**
  * DELETE /api/admin/branding
- * Reset branding to CoSeal defaults.
+ * Reset branding to SendSign defaults (requires white-label plan).
  */
-router.delete('/branding', requireRole('admin'), async (req, res) => {
-  if (!checkBrandingEntitlement()) {
-    return res.status(403).json({
-      success: false,
-      error: 'Branding customization requires the COSEAL_BRANDING_ENTITLEMENT key.',
-    });
-  }
+router.delete('/branding', requireRole('admin'), requireFeature('custom_branding'), async (req, res) => {
 
   const db = getDb();
   await db.delete(brandingConfigs);
 
   res.json({ success: true, data: { message: 'Branding reset to defaults' } });
+});
+
+/**
+ * GET /api/admin/audit/export
+ * Export audit logs as CSV or JSON (white-label only).
+ * 
+ * Query params:
+ *   - format: 'csv' | 'json' (default: csv)
+ *   - startDate: ISO date
+ *   - endDate: ISO date
+ *   - envelopeId: filter by envelope (optional)
+ */
+router.get('/audit/export', requireRole('admin'), requireFeature('audit_export'), async (req, res) => {
+  const format = (req.query.format as string) || 'csv';
+  const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+  const envelopeId = req.query.envelopeId as string | undefined;
+
+  const db = getDb();
+
+  // Build query
+  let query = db
+    .select()
+    .from(auditEvents)
+    .where(and(
+      gte(auditEvents.timestamp, startDate),
+      lte(auditEvents.timestamp, endDate),
+      envelopeId ? eq(auditEvents.envelopeId, envelopeId) : undefined,
+    ))
+    .orderBy(desc(auditEvents.timestamp));
+
+  const events = await query;
+
+  if (format === 'json') {
+    // JSON export
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=audit-log-${Date.now()}.json`);
+    res.json({
+      success: true,
+      data: {
+        exportedAt: new Date().toISOString(),
+        tenant: req.tenant?.slug,
+        eventCount: events.length,
+        events,
+      },
+    });
+  } else {
+    // CSV export
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=audit-log-${Date.now()}.csv`);
+
+    // CSV header
+    const csvRows = ['ID,Envelope ID,Event Type,Actor,IP Address,Timestamp,Event Data'];
+
+    // CSV rows
+    for (const event of events) {
+      const row = [
+        event.id,
+        event.envelopeId || '',
+        event.eventType,
+        event.actorId || '',
+        event.ipAddress || '',
+        event.timestamp.toISOString(),
+        JSON.stringify(event.eventData || {}).replace(/,/g, ';'), // Escape commas
+      ].join(',');
+      csvRows.push(row);
+    }
+
+    res.send(csvRows.join('\n'));
+  }
 });
 
 export default router;

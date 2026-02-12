@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * CoSeal MCP Server
+ * SendSign MCP Server
  *
- * Exposes CoSeal e-signature tools to Claude Desktop / Cowork
+ * Exposes SendSign e-signature tools to Claude Desktop / Cowork
  * via the Model Context Protocol.
  *
  * Usage:
@@ -11,8 +11,8 @@
  *   node dist/index.js --http   — HTTP+SSE transport on port 3001 (for Cowork / remote)
  *
  * Environment variables:
- *   COSEAL_API_URL   — Base URL of the CoSeal instance (default: http://localhost:3000)
- *   COSEAL_API_KEY   — API key for authentication (required)
+ *   SENDSIGN_API_URL   — Base URL of the SendSign instance (default: http://localhost:3000)
+ *   SENDSIGN_API_KEY   — API key for authentication (required)
  *   MCP_HTTP_PORT    — Port for HTTP mode (default: 3001)
  */
 
@@ -43,7 +43,7 @@ import {
   listWebhooks,
   deleteWebhook,
   createFromLegalReview,
-} from './coseal-client.js';
+} from './sendsign-client.js';
 
 // ─── Tool Registration ──────────────────────────────────────────────
 // Extracted into a factory so each SSE session gets its own McpServer
@@ -52,7 +52,7 @@ import {
 
 function createMcpServer(): McpServer {
   const srv = new McpServer({
-    name: 'coseal',
+    name: 'sendsign',
     version: '0.1.0',
   });
 
@@ -760,7 +760,7 @@ function registerTools(srv: McpServer): void {
   srv.tool(
     'create_from_legal_review',
     'Create a signing envelope from a Legal plugin review. This is the handoff tool that bridges ' +
-      "Anthropic's Legal plugin (Review → Redline) with CoSeal (Sign → Seal). " +
+      "Anthropic's Legal plugin (Review → Redline) with SendSign (Sign → Seal). " +
       'Provide the contract parties, reviewed document, and any notes from the legal review.',
     {
       subject: z.string().describe('Envelope subject (e.g., "MSA — Acme Corp")'),
@@ -844,15 +844,15 @@ function registerTools(srv: McpServer): void {
 // ─── Start Server ───────────────────────────────────────────────────
 
 function logConfig() {
-  console.error(`  CoSeal API: ${process.env.COSEAL_API_URL || 'http://localhost:3000'}`);
-  console.error(`  API Key:    ${process.env.COSEAL_API_KEY ? '****' + process.env.COSEAL_API_KEY.slice(-4) : '(not set)'}`);
+  console.error(`  SendSign API: ${process.env.SENDSIGN_API_URL || 'http://localhost:3000'}`);
+  console.error(`  API Key:    ${process.env.SENDSIGN_API_KEY ? '****' + process.env.SENDSIGN_API_KEY.slice(-4) : '(not set)'}`);
 }
 
 async function startStdio() {
   const srv = createMcpServer();
   const transport = new StdioServerTransport();
   await srv.connect(transport);
-  console.error('CoSeal MCP server running on stdio');
+  console.error('SendSign MCP server running on stdio');
   logConfig();
 }
 
@@ -952,7 +952,7 @@ async function startHttp() {
   });
 
   httpServer.listen(port, () => {
-    console.error(`CoSeal MCP server running on HTTP+SSE`);
+    console.error(`SendSign MCP server running on HTTP+SSE`);
     console.error(`  SSE endpoint: http://localhost:${port}/sse`);
     console.error(`  Messages:     http://localhost:${port}/messages`);
     console.error(`  Health:       http://localhost:${port}/health`);

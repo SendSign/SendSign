@@ -35,8 +35,8 @@ export async function generateSelfSignedCert(): Promise<{
   cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 10);
 
   const attrs: forge.pki.CertificateField[] = [
-    { name: 'commonName', value: 'CoSeal Self-Signed Certificate' },
-    { name: 'organizationName', value: 'CoSeal' },
+    { name: 'commonName', value: 'SendSign Self-Signed Certificate' },
+    { name: 'organizationName', value: 'SendSign' },
     { name: 'countryName', value: 'US' },
   ];
 

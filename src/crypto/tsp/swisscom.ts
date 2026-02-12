@@ -82,7 +82,7 @@ export class SwisscomTSP implements TrustServiceProvider {
     //     "RequestID": sessionId,
     //     "Profile": "http://ais.swisscom.ch/1.1",
     //     "OptionalInputs": {
-    //       "ClaimedIdentity": { "Name": "CoSeal" },
+    //       "ClaimedIdentity": { "Name": "SendSign" },
     //       "SignatureType": "urn:ietf:rfc:3369",
     //       "AddTimestamp": { "Type": "urn:ietf:rfc:3161" }
     //     },
@@ -106,7 +106,7 @@ export class SwisscomTSP implements TrustServiceProvider {
             stepUpAuthorisation: {
               phone: {
                 msisdn: signer.phone,
-                message: 'CoSeal: Please confirm your qualified signature.',
+                message: 'SendSign: Please confirm your qualified signature.',
                 language: 'en',
               },
             },

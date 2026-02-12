@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CoSealBranding } from '../components/CoSealBranding';
+import { SendSignBranding } from '../components/SendSignBranding';
 
 type VerificationStep = 'email' | 'sms' | 'government_id' | 'complete';
 
@@ -206,7 +206,7 @@ export function VerifyPage() {
             </div>
           </div>
         </div>
-        <CoSealBranding />
+        <SendSignBranding />
       </div>
     );
   }
@@ -339,7 +339,7 @@ export function VerifyPage() {
           </div>
         </div>
       </div>
-      <CoSealBranding />
+      <SendSignBranding />
     </div>
   );
 }

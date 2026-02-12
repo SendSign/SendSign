@@ -1,0 +1,16 @@
+apiVersion: v2
+name: sendsign
+description: SendSign — Open Source E-Signature Engine
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - esignature
+  - document-signing
+  - sendsign
+home: https://github.com/sendsign/sendsign
+sources:
+  - https://github.com/sendsign/sendsign
+maintainers:
+  - name: SendSign Contributors
+    url: https://github.com/sendsign/sendsign

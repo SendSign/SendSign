@@ -1,13 +1,13 @@
 /**
- * Jira integration for CoSeal.
+ * Jira integration for SendSign.
  * Creates or updates Jira tickets when envelopes reach milestones.
  */
 
-import type { CoSealIntegration } from './types.js';
+import type { SendSignIntegration } from './types.js';
 import type { Envelope } from '../db/schema.js';
 import { downloadDocument } from '../storage/documentStore.js';
 
-export class JiraIntegration implements CoSealIntegration {
+export class JiraIntegration implements SendSignIntegration {
   readonly name = 'jira';
   readonly displayName = 'Jira';
   readonly description = 'Create Jira tickets and attach completed documents';

@@ -88,6 +88,7 @@ export async function correctEnvelope(
   // 2. Add new signers
   if (corrections.addSigners && corrections.addSigners.length > 0) {
     const newSigners = corrections.addSigners.map((s, idx) => ({
+      tenantId: envelope.tenantId,
       id: uuidv4(),
       envelopeId,
       name: s.name,
@@ -119,6 +120,7 @@ export async function correctEnvelope(
   // 4. Add fields
   if (corrections.addFields && corrections.addFields.length > 0) {
     const newFields = corrections.addFields.map((f) => ({
+      tenantId: envelope.tenantId,
       id: uuidv4(),
       envelopeId,
       documentId: f.documentId,

@@ -152,9 +152,23 @@ export async function registerUser(
 
   // Create new user
   const passwordHash = await hashPassword(password);
+  
+  // Lookup tenantId from organization or use default
+  const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+  let tenantId = DEFAULT_TENANT_ID;
+  if (organizationId) {
+    const [org] = await db
+      .select({ tenantId: organizations.tenantId })
+      .from(organizations)
+      .where(eq(organizations.id, organizationId))
+      .limit(1);
+    tenantId = org?.tenantId || DEFAULT_TENANT_ID;
+  }
+  
   const [newUser] = await db
     .insert(users)
     .values({
+      tenantId,
       email: email.toLowerCase(),
       name,
       passwordHash,
@@ -295,9 +309,22 @@ export async function ssoLogin(
     }
   } else {
     // Auto-create user from SSO
+    // Lookup tenantId from organization or use default
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+    let tenantId = DEFAULT_TENANT_ID;
+    if (organizationId) {
+      const [org] = await db
+        .select({ tenantId: organizations.tenantId })
+        .from(organizations)
+        .where(eq(organizations.id, organizationId))
+        .limit(1);
+      tenantId = org?.tenantId || DEFAULT_TENANT_ID;
+    }
+    
     [user] = await db
       .insert(users)
       .values({
+        tenantId,
         email: email.toLowerCase(),
         name: name || email.split('@')[0],
         ssoSubject,

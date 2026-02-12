@@ -1,8 +1,8 @@
-# CoSeal Legal Compliance Guide
+# SendSign Legal Compliance Guide
 
-This document explains how CoSeal helps you comply with electronic signature laws and regulations worldwide.
+This document explains how SendSign helps you comply with electronic signature laws and regulations worldwide.
 
-**Disclaimer:** CoSeal is designed to assist with compliance, but this guide is not legal advice. For specific legal guidance about your use case, consult with qualified legal counsel in your jurisdiction.
+**Disclaimer:** SendSign is designed to assist with compliance, but this guide is not legal advice. For specific legal guidance about your use case, consult with qualified legal counsel in your jurisdiction.
 
 ---
 
@@ -21,9 +21,9 @@ The **Electronic Signatures in Global and National Commerce Act** is a federal l
 3. ✅ **Association with the record**: The signature must be logically associated with the document
 4. ✅ **Record retention**: An accurate and accessible record must be retained
 
-**How CoSeal complies:**
+**How SendSign complies:**
 
-| Requirement         | CoSeal Implementation                                                                                      |
+| Requirement         | SendSign Implementation                                                                                      |
 |---------------------|-----------------------------------------------------------------------------------------------------------|
 | Intent to sign      | Signers must explicitly click "Sign" button, draw/type signature, and confirm action                      |
 | Consent             | Signing ceremony includes clear disclosure that this is an electronic signature                            |
@@ -42,7 +42,7 @@ UETA has been adopted by 47 US states (all except Illinois, New York, Washington
 2. ✅ A signature must be attributable to a person
 3. ✅ Intent to sign must be demonstrated
 
-**How CoSeal complies:**
+**How SendSign complies:**
 
 - **Retention**: Documents stored encrypted, audit trail is immutable and exportable
 - **Attribution**: Each signature is linked to verified email, phone (optional), or government ID (optional)
@@ -66,7 +66,7 @@ UETA has been adopted by 47 US states (all except Illinois, New York, Washington
 
 **Legal effect:** Admissible as evidence in legal proceedings, but not presumed to be reliable.
 
-**CoSeal support:** ✅ **Fully supported** (default mode)
+**SendSign support:** ✅ **Fully supported** (default mode)
 
 **Use cases:**
 - Internal approvals
@@ -87,11 +87,11 @@ UETA has been adopted by 47 US states (all except Illinois, New York, Washington
 
 **Legal effect:** Presumed reliable; carries significant legal weight.
 
-**CoSeal support:** ✅ **Fully supported** (with identity verification enabled)
+**SendSign support:** ✅ **Fully supported** (with identity verification enabled)
 
-**Requirements and CoSeal implementation:**
+**Requirements and SendSign implementation:**
 
-| Requirement                      | CoSeal Implementation                                                                                  |
+| Requirement                      | SendSign Implementation                                                                                  |
 |----------------------------------|-------------------------------------------------------------------------------------------------------|
 | Uniquely linked to signatory     | Each signature is created with a unique single-use signing token                                       |
 | Capable of identifying signatory | Identity verification via email + SMS OTP, or government ID check                                      |
@@ -132,7 +132,7 @@ UETA has been adopted by 47 US states (all except Illinois, New York, Washington
 
 **Legal effect:** Equivalent to a handwritten signature in all EU member states. Cannot be denied legal effect solely on the grounds that it is electronic.
 
-**CoSeal support:** ✅ **Supported** (via Trust Service Provider integration)
+**SendSign support:** ✅ **Supported** (via Trust Service Provider integration)
 
 **Supported TSPs:**
 
@@ -187,7 +187,7 @@ SWISSCOM_AIS_CERT_PATH=/certs/swisscom-client.pem
 
 Post-Brexit, the UK follows **eIDAS-equivalent principles** under the **Electronic Communications Act 2000** and **Electronic Signatures Regulations 2002**.
 
-**CoSeal compliance:** Same as eIDAS (SES and AES supported).
+**SendSign compliance:** Same as eIDAS (SES and AES supported).
 
 #### Canada
 
@@ -198,7 +198,7 @@ Post-Brexit, the UK follows **eIDAS-equivalent principles** under the **Electron
 - Reliable method of identifying the signatory
 - Record retention
 
-**CoSeal compliance:** Meets all requirements.
+**SendSign compliance:** Meets all requirements.
 
 #### Australia
 
@@ -209,11 +209,11 @@ Post-Brexit, the UK follows **eIDAS-equivalent principles** under the **Electron
 - Method is reliable
 - Consent to use electronic signatures
 
-**CoSeal compliance:** Meets all requirements.
+**SendSign compliance:** Meets all requirements.
 
 #### Global
 
-Most countries recognize electronic signatures under their own laws. CoSeal's cryptographic sealing, audit trail, and identity verification features are designed to meet the highest common requirements across jurisdictions.
+Most countries recognize electronic signatures under their own laws. SendSign's cryptographic sealing, audit trail, and identity verification features are designed to meet the highest common requirements across jurisdictions.
 
 ---
 
@@ -221,7 +221,7 @@ Most countries recognize electronic signatures under their own laws. CoSeal's cr
 
 The **audit trail** is the most critical component for proving the validity of an electronic signature in legal proceedings.
 
-### What CoSeal's Audit Trail Captures
+### What SendSign's Audit Trail Captures
 
 Every action related to an envelope is logged with:
 
@@ -304,7 +304,7 @@ sha256sum signed-document.pdf
 - Encryption at rest and in transit
 - Patient consent
 
-**CoSeal compliance:**
+**SendSign compliance:**
 - ✅ API key authentication + token-based signing access
 - ✅ Comprehensive audit trail
 - ✅ AES-256-GCM encryption for documents, TLS for transit (with reverse proxy)
@@ -320,7 +320,7 @@ sha256sum signed-document.pdf
 - Data integrity
 - Non-repudiation
 
-**CoSeal compliance:**
+**SendSign compliance:**
 - ✅ Multi-factor identity verification (email + SMS + government ID)
 - ✅ Immutable audit trail with all actions logged
 - ✅ Cryptographic sealing ensures data integrity
@@ -336,7 +336,7 @@ sha256sum signed-document.pdf
 - Secure document storage
 - Compliance with state-specific laws
 
-**CoSeal compliance:**
+**SendSign compliance:**
 - ✅ Identity verification via government ID check (optional)
 - ✅ Explicit signing actions demonstrate intent
 - ✅ Encrypted storage with configurable retention
@@ -353,7 +353,7 @@ sha256sum signed-document.pdf
 - Data portability
 - Security
 
-**CoSeal compliance:**
+**SendSign compliance:**
 - ✅ Only collects necessary data (name, email, signature)
 - ✅ Signatures used only for intended purpose
 - ✅ Voided envelopes can be purged (configurable retention)
@@ -366,7 +366,7 @@ sha256sum signed-document.pdf
 
 ## Record Retention
 
-CoSeal allows configurable document retention policies.
+SendSign allows configurable document retention policies.
 
 **Environment variable:**
 ```env
@@ -451,15 +451,15 @@ Before going live, verify:
 
 ## Disclaimer
 
-This guide provides general information about electronic signature laws and how CoSeal helps meet compliance requirements. It is not legal advice. Laws vary by jurisdiction, industry, and use case. Always consult qualified legal counsel to ensure your specific use of CoSeal complies with applicable regulations.
+This guide provides general information about electronic signature laws and how SendSign helps meet compliance requirements. It is not legal advice. Laws vary by jurisdiction, industry, and use case. Always consult qualified legal counsel to ensure your specific use of SendSign complies with applicable regulations.
 
-CoSeal contributors and maintainers are not liable for any legal issues arising from the use of this software.
+SendSign contributors and maintainers are not liable for any legal issues arising from the use of this software.
 
 ---
 
 ## Document Retention Policies
 
-CoSeal includes built-in retention policies for industry-specific compliance requirements.
+SendSign includes built-in retention policies for industry-specific compliance requirements.
 
 ### Built-in Retention Presets
 
@@ -478,31 +478,31 @@ CoSeal includes built-in retention policies for industry-specific compliance req
 - Medical records: 6-10 years (varies by state)
 - Medicare/Medicaid: 10 years
 - Minors: Until age 21 + 6 years
-- **CoSeal preset:** 7 years, manual review
+- **SendSign preset:** 7 years, manual review
 
 #### Financial Services (SEC/FINRA)
 - SEC Rule 17a-4: 6 years for broker-dealer records
 - Customer account records: 6 years
 - Contracts: Duration + statute of limitations
-- **CoSeal preset:** 7 years, manual review
+- **SendSign preset:** 7 years, manual review
 
 #### Tax Records (IRS)
 - General records: 3-7 years
 - Fraud cases: Indefinite
 - Employment tax: 4 years
-- **CoSeal preset:** 7 years (conservative approach)
+- **SendSign preset:** 7 years (conservative approach)
 
 #### Employment (EEOC/FLSA)
 - Payroll records: 3 years (FLSA)
 - Personnel files: 5-7 years after termination
 - I-9 forms: 3 years after hire OR 1 year after termination
-- **CoSeal preset:** 5 years
+- **SendSign preset:** 5 years
 
 #### GDPR (EU)
 - Data minimization principle: keep only as long as necessary
 - Right to erasure: delete upon request (with legal exceptions)
 - Storage limitation: define retention periods upfront
-- **CoSeal preset:** 1 year with auto-delete
+- **SendSign preset:** 1 year with auto-delete
 
 ### Configuring Retention
 
@@ -535,7 +535,7 @@ GET /api/retention/report
 
 ### Retention Cron Job
 
-CoSeal runs a daily retention check at 2 AM (server time):
+SendSign runs a daily retention check at 2 AM (server time):
 - Check for expired documents
 - Auto-delete if \`autoDelete: true\`
 - Flag for manual review if \`autoDelete: false\`
@@ -562,4 +562,4 @@ POST /api/retention/process
 
 ### Legal Considerations
 
-⚠️ **Disclaimer:** CoSeal's retention presets are guidelines based on common regulations. Your specific retention requirements may vary based on state/local laws, industry regulations, and contractual obligations. Always consult legal counsel for compliance guidance.
+⚠️ **Disclaimer:** SendSign's retention presets are guidelines based on common regulations. Your specific retention requirements may vary based on state/local laws, industry regulations, and contractual obligations. Always consult legal counsel for compliance guidance.

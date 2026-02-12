@@ -9,6 +9,7 @@ import { initConfig } from './config/index.js';
 import { getDb, closeDb } from './db/connection.js';
 import { apiRateLimiter, signingRateLimiter } from './api/middleware/rateLimit.js';
 import { authenticate } from './api/middleware/auth.js';
+import { tenantContext } from './api/middleware/tenantContext.js';
 import { csrfProtection, csrfTokenHandler } from './api/middleware/csrf.js';
 import { scheduleReminders } from './workflow/reminderScheduler.js';
 import { scheduleExpiryCheck } from './workflow/expiryManager.js';
@@ -27,6 +28,14 @@ import integrationsRoutes from './api/routes/integrations.js';
 import organizationsRoutes from './api/routes/organizations.js';
 import authRoutes from './api/routes/auth.js';
 import complianceRoutes from './api/routes/compliance.js';
+import pluginRoutes from './api/routes/plugin.js';
+import billingRoutes, { billingWebhookRouter } from './api/routes/billing.js';
+
+// Control plane imports
+import { controlAuth } from './control/middleware/controlAuth.js';
+import controlTenantRoutes from './control/routes/tenants.js';
+import controlHealthRoutes from './control/routes/health.js';
+import controlBillingRoutes from './control/routes/billing.js';
 
 // ─── Initialize Configuration ────────────────────────────────────────
 
@@ -76,6 +85,10 @@ app.use(cors({
   credentials: true,
 }));
 app.use(cookieParser());
+
+// Stripe webhook needs raw body for signature verification — mount BEFORE json parser
+app.use('/api/billing/webhook', express.raw({ type: 'application/json' }), billingWebhookRouter);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -84,6 +97,19 @@ app.use(csrfProtection);
 
 // Health check (no auth required)
 app.use(healthRoutes);
+
+// Control plane health (no auth for basic checks, controlAuth for detailed)
+app.use('/health', controlHealthRoutes);
+
+// Control plane API (master key auth — bypasses RLS)
+app.use('/control', controlAuth, controlTenantRoutes);
+app.use('/control', controlBillingRoutes); // Billing webhooks have their own auth (Stripe signature)
+
+// Plugin download (info is public, download requires API key in query/header)
+app.use('/api/plugin', apiRateLimiter, pluginRoutes);
+
+// Billing (checkout is public, portal requires auth, success is public)
+app.use('/api/billing', apiRateLimiter, billingRoutes);
 
 // Auth routes (no auth required — this IS the auth)
 app.use('/api/auth', apiRateLimiter, authRoutes);
@@ -94,16 +120,16 @@ app.get('/api/auth/csrf-token', csrfTokenHandler);
 app.use('/api/sign', signingRateLimiter, signingRoutes);
 app.use('/api/signing', signingRateLimiter, signingRoutes);
 
-// API routes (require API key auth, rate limited)
-app.use('/api/envelopes', apiRateLimiter, authenticate, envelopeRoutes);
-app.use('/api/templates', apiRateLimiter, authenticate, templateRoutes);
-app.use('/api/webhooks', apiRateLimiter, authenticate, webhookRoutes);
-app.use('/api/admin', apiRateLimiter, authenticate, adminRoutes);
-app.use('/api/sso', apiRateLimiter, authenticate, ssoRoutes);
-app.use('/api/retention', apiRateLimiter, authenticate, retentionRoutes);
-app.use('/api/integrations', apiRateLimiter, authenticate, integrationsRoutes);
-app.use('/api/organizations', apiRateLimiter, authenticate, organizationsRoutes);
-app.use('/api/compliance', apiRateLimiter, authenticate, complianceRoutes);
+// API routes (require API key auth + tenant context, rate limited)
+app.use('/api/envelopes', apiRateLimiter, authenticate, tenantContext, envelopeRoutes);
+app.use('/api/templates', apiRateLimiter, authenticate, tenantContext, templateRoutes);
+app.use('/api/webhooks', apiRateLimiter, authenticate, tenantContext, webhookRoutes);
+app.use('/api/admin', apiRateLimiter, authenticate, tenantContext, adminRoutes);
+app.use('/api/sso', apiRateLimiter, authenticate, tenantContext, ssoRoutes);
+app.use('/api/retention', apiRateLimiter, authenticate, tenantContext, retentionRoutes);
+app.use('/api/integrations', apiRateLimiter, authenticate, tenantContext, integrationsRoutes);
+app.use('/api/organizations', apiRateLimiter, authenticate, tenantContext, organizationsRoutes);
+app.use('/api/compliance', apiRateLimiter, authenticate, tenantContext, complianceRoutes);
 
 // ─── Serve Signing UI (React SPA) ───────────────────────────────────
 
@@ -114,6 +140,15 @@ const signingUiPath = path.resolve(__dirname, '../signing-ui/dist');
 app.use('/assets', express.static(path.join(signingUiPath, 'assets')));
 app.use('/vite.svg', express.static(path.join(signingUiPath, 'vite.svg')));
 app.use('/sendsign-logo.svg', express.static(path.join(signingUiPath, 'sendsign-logo.svg')));
+
+// Billing success/cancel pages — redirect to API billing routes
+app.get('/billing/success', (req, res) => {
+  const sessionId = req.query.session_id;
+  res.redirect(`/api/billing/success?session_id=${sessionId}`);
+});
+app.get('/billing/cancel', (_req, res) => {
+  res.redirect('/');
+});
 
 // SPA fallback: serve index.html for signing UI routes
 const spaRoutes = ['/dashboard', '/login', '/register', '/privacy', '/terms', '/profile', '/sign/*', '/prepare/*', '/verify', '/complete', '/expired', '/in-person/*', '/powerform/*', '/admin'];
@@ -150,7 +185,7 @@ if (process.env.NODE_ENV !== 'test') {
   const PORT = config.port;
 
   server = app.listen(PORT, () => {
-    console.log(`✓ CoSeal API listening on port ${PORT}`);
+    console.log(`✓ SendSign API listening on port ${PORT}`);
     console.log(`  Environment: ${config.nodeEnv}`);
     console.log(`  Base URL: ${config.baseUrl}`);
 

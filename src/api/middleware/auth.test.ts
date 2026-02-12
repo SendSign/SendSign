@@ -4,7 +4,7 @@ import { hashApiKey } from './auth.js';
 describe('Auth Middleware', () => {
   describe('hashApiKey', () => {
     it('should produce consistent SHA-256 hash', () => {
-      const key = 'coseal_test_key_123';
+      const key = 'sendsign_test_key_123';
       const hash1 = hashApiKey(key);
       const hash2 = hashApiKey(key);
 

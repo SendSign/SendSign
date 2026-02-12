@@ -14,6 +14,7 @@ export interface UploadMetadata {
   filename?: string;
   contentType?: string;
   envelopeId?: string;
+  tenantId?: string;
   [key: string]: string | undefined;
 }
 
@@ -43,7 +44,7 @@ function getS3(): S3Client {
 }
 
 function getBucket(): string {
-  return process.env.S3_BUCKET ?? 'coseal-documents';
+  return process.env.S3_BUCKET ?? 'sendsign-documents';
 }
 
 // Cache the derived key so we get the same key for upload and download
@@ -57,7 +58,7 @@ function getEncryptionKey(): Buffer {
   }
   // Use a fixed, deterministic salt derived from the key itself
   // This ensures the same passphrase always produces the same encryption key
-  const fixedSalt = Buffer.from('coseal-document-encryption-salt!');
+  const fixedSalt = Buffer.from('sendsign-document-encryption-salt!');
   _encryptionKey = deriveKey(keyStr, fixedSalt).key;
   return _encryptionKey;
 }
@@ -65,12 +66,19 @@ function getEncryptionKey(): Buffer {
 /**
  * Encrypt and upload a document to storage (S3 or local filesystem).
  * Returns the storage key.
+ * 
+ * Storage key format:
+ * - With tenant: {tenantId}/documents/{uuid}
+ * - Without tenant (legacy): documents/{uuid}
  */
 export async function uploadDocument(
   data: Buffer,
   metadata?: UploadMetadata,
 ): Promise<string> {
-  const key = `documents/${uuidv4()}`;
+  const uuid = uuidv4();
+  const key = metadata?.tenantId
+    ? `${metadata.tenantId}/documents/${uuid}`
+    : `documents/${uuid}`;
   const encKey = getEncryptionKey();
 
   // Encrypt the document

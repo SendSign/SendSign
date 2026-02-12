@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sendsign.fullname" . }}-config
+  labels:
+    {{- include "sendsign.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.config.nodeEnv | quote }}
+  PORT: {{ .Values.config.port | quote }}
+  BASE_URL: {{ .Values.config.baseUrl | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  S3_REGION: {{ .Values.storage.region | quote }}
+  S3_BUCKET: {{ .Values.storage.bucket | quote }}
+  {{- if .Values.storage.endpoint }}
+  S3_ENDPOINT: {{ .Values.storage.endpoint | quote }}
+  {{- end }}
+  {{- if .Values.storage.forcePathStyle }}
+  S3_FORCE_PATH_STYLE: "true"
+  {{- end }}
+  {{- if .Values.database.host }}
+  DB_HOST: {{ .Values.database.host | quote }}
+  DB_PORT: {{ .Values.database.port | quote }}
+  DB_NAME: {{ .Values.database.name | quote }}
+  DB_SSL: {{ .Values.database.ssl | quote }}
+  {{- end }}
+  EMAIL_FROM_ADDRESS: {{ .Values.email.fromAddress | quote }}
+  EMAIL_FROM_NAME: {{ .Values.email.fromName | quote }}

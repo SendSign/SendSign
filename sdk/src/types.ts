@@ -1,12 +1,12 @@
 /**
- * CoSeal SDK TypeScript types.
- * @module @coseal/sdk
+ * SendSign SDK TypeScript types.
+ * @module @sendsign/sdk
  */
 
 // ─── Configuration ──────────────────────────────────────────────────
 
-export interface CoSealConfig {
-  /** Base URL of the CoSeal API (e.g., "https://sign.yourcompany.com") */
+export interface SendSignConfig {
+  /** Base URL of the SendSign API (e.g., "https://sign.yourcompany.com") */
   baseUrl: string;
   /** API key for authentication */
   apiKey: string;

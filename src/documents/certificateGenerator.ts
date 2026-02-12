@@ -221,7 +221,7 @@ export async function generateCompletionCertificate(envelopeId: string): Promise
 
   // Footer
   const footerY = 50;
-  page.drawText('This certificate was generated automatically by CoSeal.', {
+  page.drawText('This certificate was generated automatically by SendSign.', {
     x: 50,
     y: footerY,
     size: 8,

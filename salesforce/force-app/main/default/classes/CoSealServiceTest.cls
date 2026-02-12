@@ -1,17 +1,17 @@
 /**
- * CoSealServiceTest — Test class for CoSealService with HTTP callout mocking.
+ * SendSignServiceTest — Test class for SendSignService with HTTP callout mocking.
  * Provides 75%+ code coverage required for Salesforce deployment.
  */
 @isTest
-private class CoSealServiceTest {
+private class SendSignServiceTest {
 
     // ─── Test Setup ────────────────────────────────────────────
 
     @TestSetup
     static void setupData() {
         // Create custom settings
-        CoSeal_Settings__c settings = new CoSeal_Settings__c(
-            API_URL__c = 'https://coseal.example.com',
+        SendSign_Settings__c settings = new SendSign_Settings__c(
+            API_URL__c = 'https://sendsign.example.com',
             API_Key__c = 'test-api-key-12345',
             Default_Template__c = 'template-uuid-default'
         );
@@ -88,7 +88,7 @@ private class CoSealServiceTest {
         public HttpResponse respond(HttpRequest req) {
             HttpResponse res = new HttpResponse();
             res.setStatusCode(200);
-            res.setBody('{"success": true, "data": {"url": "https://coseal.example.com/sign/token123?embed=true"}}');
+            res.setBody('{"success": true, "data": {"url": "https://sendsign.example.com/sign/token123?embed=true"}}');
             return res;
         }
     }
@@ -124,8 +124,8 @@ private class CoSealServiceTest {
         Test.setMock(HttpCalloutMock.class, new SendEnvelopeMock());
         Opportunity opp = [SELECT Id FROM Opportunity LIMIT 1];
 
-        List<CoSealService.SignerInfo> signers = new List<CoSealService.SignerInfo>();
-        signers.add(new CoSealService.SignerInfo('alice@test.com', 'Alice'));
+        List<SendSignService.SignerInfo> signers = new List<SendSignService.SignerInfo>();
+        signers.add(new SendSignService.SignerInfo('alice@test.com', 'Alice'));
 
         Map<String, String> mergeData = new Map<String, String>{
             'client_name' => 'Test Account',
@@ -133,7 +133,7 @@ private class CoSealServiceTest {
         };
 
         Test.startTest();
-        String envelopeId = CoSealService.sendForSignature(
+        String envelopeId = SendSignService.sendForSignature(
             opp.Id, 'template-uuid', signers, mergeData
         );
         Test.stopTest();
@@ -146,14 +146,14 @@ private class CoSealServiceTest {
         Test.setMock(HttpCalloutMock.class, new FailureMock());
         Opportunity opp = [SELECT Id FROM Opportunity LIMIT 1];
 
-        List<CoSealService.SignerInfo> signers = new List<CoSealService.SignerInfo>();
-        signers.add(new CoSealService.SignerInfo('alice@test.com', 'Alice'));
+        List<SendSignService.SignerInfo> signers = new List<SendSignService.SignerInfo>();
+        signers.add(new SendSignService.SignerInfo('alice@test.com', 'Alice'));
 
         Test.startTest();
         try {
-            CoSealService.sendForSignature(opp.Id, 'template-uuid', signers, new Map<String, String>());
+            SendSignService.sendForSignature(opp.Id, 'template-uuid', signers, new Map<String, String>());
             System.assert(false, 'Should have thrown exception');
-        } catch (CoSealService.CoSealException e) {
+        } catch (SendSignService.SendSignException e) {
             System.assert(e.getMessage().contains('Failed to create envelope'), 'Should contain error message');
         }
         Test.stopTest();
@@ -166,7 +166,7 @@ private class CoSealServiceTest {
         Test.setMock(HttpCalloutMock.class, new GetStatusMock());
 
         Test.startTest();
-        Map<String, Object> status = CoSealService.getEnvelopeStatus('env-uuid-12345');
+        Map<String, Object> status = SendSignService.getEnvelopeStatus('env-uuid-12345');
         Test.stopTest();
 
         System.assertEquals('completed', status.get('status'), 'Status should be completed');
@@ -179,9 +179,9 @@ private class CoSealServiceTest {
 
         Test.startTest();
         try {
-            CoSealService.getEnvelopeStatus('bad-id');
+            SendSignService.getEnvelopeStatus('bad-id');
             System.assert(false, 'Should have thrown exception');
-        } catch (CoSealService.CoSealException e) {
+        } catch (SendSignService.SendSignException e) {
             System.assert(e.getMessage().contains('Failed to get envelope status'), 'Error message should be present');
         }
         Test.stopTest();
@@ -194,10 +194,10 @@ private class CoSealServiceTest {
         Test.setMock(HttpCalloutMock.class, new EmbeddedSigningMock());
 
         Test.startTest();
-        String url = CoSealService.getEmbeddedSigningUrl('env-uuid-12345', 'alice@test.com');
+        String url = SendSignService.getEmbeddedSigningUrl('env-uuid-12345', 'alice@test.com');
         Test.stopTest();
 
-        System.assert(url.contains('coseal.example.com/sign/'), 'URL should contain signing path');
+        System.assert(url.contains('sendsign.example.com/sign/'), 'URL should contain signing path');
     }
 
     // ─── Test: buildMergeData ───────────────────────────────────
@@ -212,7 +212,7 @@ private class CoSealServiceTest {
         };
 
         Test.startTest();
-        Map<String, String> mergeData = CoSealService.buildMergeData(opp.Id, fieldMapping);
+        Map<String, String> mergeData = SendSignService.buildMergeData(opp.Id, fieldMapping);
         Test.stopTest();
 
         System.assertEquals('Test Opportunity', mergeData.get('opp_name'), 'Name should map correctly');
@@ -226,7 +226,7 @@ private class CoSealServiceTest {
         Test.setMock(HttpCalloutMock.class, new ActionSuccessMock());
 
         Test.startTest();
-        Boolean result = CoSealService.sendReminder('env-uuid-12345', 'alice@test.com');
+        Boolean result = SendSignService.sendReminder('env-uuid-12345', 'alice@test.com');
         Test.stopTest();
 
         System.assertEquals(true, result, 'Reminder should succeed');
@@ -239,7 +239,7 @@ private class CoSealServiceTest {
         Test.setMock(HttpCalloutMock.class, new ActionSuccessMock());
 
         Test.startTest();
-        Boolean result = CoSealService.voidEnvelope('env-uuid-12345', 'Test reason');
+        Boolean result = SendSignService.voidEnvelope('env-uuid-12345', 'Test reason');
         Test.stopTest();
 
         System.assertEquals(true, result, 'Void should succeed');
@@ -252,7 +252,7 @@ private class CoSealServiceTest {
         Test.setMock(HttpCalloutMock.class, new ActionSuccessMock());
 
         Test.startTest();
-        Boolean result = CoSealService.sendEnvelope('env-uuid-12345');
+        Boolean result = SendSignService.sendEnvelope('env-uuid-12345');
         Test.stopTest();
 
         System.assertEquals(true, result, 'Send should succeed');
@@ -265,7 +265,7 @@ private class CoSealServiceTest {
         Test.setMock(HttpCalloutMock.class, new DownloadMock());
 
         Test.startTest();
-        Blob pdf = CoSealService.downloadSealedDocument('env-uuid-12345');
+        Blob pdf = SendSignService.downloadSealedDocument('env-uuid-12345');
         Test.stopTest();
 
         System.assertNotEquals(null, pdf, 'PDF blob should not be null');
@@ -275,7 +275,7 @@ private class CoSealServiceTest {
 
     @isTest
     static void testSignerInfoConstructor() {
-        CoSealService.SignerInfo signer = new CoSealService.SignerInfo('alice@test.com', 'Alice');
+        SendSignService.SignerInfo signer = new SendSignService.SignerInfo('alice@test.com', 'Alice');
 
         System.assertEquals('alice@test.com', signer.email);
         System.assertEquals('Alice', signer.name);

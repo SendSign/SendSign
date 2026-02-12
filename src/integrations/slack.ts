@@ -1,12 +1,12 @@
 /**
- * Slack integration for CoSeal.
+ * Slack integration for SendSign.
  * Sends notifications to a Slack channel when envelope events occur.
  */
 
-import type { CoSealIntegration } from './types.js';
+import type { SendSignIntegration } from './types.js';
 import type { Envelope } from '../db/schema.js';
 
-export class SlackIntegration implements CoSealIntegration {
+export class SlackIntegration implements SendSignIntegration {
   readonly name = 'slack';
   readonly displayName = 'Slack';
   readonly description = 'Send notifications to Slack when documents are signed';
@@ -29,13 +29,13 @@ export class SlackIntegration implements CoSealIntegration {
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
       await this.sendMessage({
-        text: '✅ CoSeal integration test successful!',
+        text: '✅ SendSign integration test successful!',
         blocks: [
           {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: '*CoSeal Integration Test*\n\nYour Slack integration is working correctly! You\'ll receive notifications here when documents are sent, signed, and completed.',
+              text: '*SendSign Integration Test*\n\nYour Slack integration is working correctly! You\'ll receive notifications here when documents are sent, signed, and completed.',
             },
           },
         ],

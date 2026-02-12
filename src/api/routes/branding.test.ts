@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 
 describe('Branding Entitlement', () => {
   it('should reject PUT /branding without entitlement', () => {
-    // When COSEAL_BRANDING_ENTITLEMENT is not set
+    // When SENDSIGN_BRANDING_ENTITLEMENT is not set
     const hasEntitlement = !!undefined;
     expect(hasEntitlement).toBe(false);
     
@@ -29,12 +29,12 @@ describe('Branding Entitlement', () => {
       primaryColor: '#2563EB',
       secondaryColor: '#1E40AF',
       accentColor: '#3B82F6',
-      companyName: 'CoSeal',
+      companyName: 'SendSign',
       isDefault: true,
     };
 
     expect(defaultBranding.primaryColor).toBe('#2563EB');
-    expect(defaultBranding.companyName).toBe('CoSeal');
+    expect(defaultBranding.companyName).toBe('SendSign');
     expect(defaultBranding.isDefault).toBe(true);
   });
 });
@@ -85,12 +85,12 @@ describe('Branding Validation', () => {
 });
 
 describe('Branding in Components', () => {
-  it('should render default CoSeal branding without entitlement', () => {
+  it('should render default SendSign branding without entitlement', () => {
     const entitlementActive = false;
     const isDefault = true;
-    const companyName = 'CoSeal';
+    const companyName = 'SendSign';
 
-    // Without entitlement: always show "Powered by CoSeal"
+    // Without entitlement: always show "Powered by SendSign"
     const shouldShowDefaultBranding = !entitlementActive;
     expect(shouldShowDefaultBranding).toBe(true);
   });
@@ -142,11 +142,11 @@ describe('Email Branding', () => {
     expect(variables['brandEmailFooter']).toBe('Powered by Acme Corp');
   });
 
-  it('should use CoSeal as default fromName without config', () => {
-    const brandingCompanyName = 'CoSeal'; // default
+  it('should use SendSign as default fromName without config', () => {
+    const brandingCompanyName = 'SendSign'; // default
     const fromName = process.env.SENDGRID_FROM_NAME ?? brandingCompanyName;
 
-    expect(fromName).toBe('CoSeal');
+    expect(fromName).toBe('SendSign');
   });
 });
 
@@ -165,10 +165,10 @@ describe('Certificate of Completion Branding', () => {
     expect(footer).toBe('Acme Corp v1.0.0 — E-Signature Engine');
   });
 
-  it('should fall back to CoSeal when no branding configured', () => {
-    const companyName = 'CoSeal'; // default
+  it('should fall back to SendSign when no branding configured', () => {
+    const companyName = 'SendSign'; // default
     const footer = `${companyName} v1.0.0 — E-Signature Engine`;
 
-    expect(footer).toBe('CoSeal v1.0.0 — E-Signature Engine');
+    expect(footer).toBe('SendSign v1.0.0 — E-Signature Engine');
   });
 });

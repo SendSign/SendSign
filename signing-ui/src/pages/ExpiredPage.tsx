@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { CoSealBranding } from '../components/CoSealBranding';
+import { SendSignBranding } from '../components/SendSignBranding';
 
 export function ExpiredPage() {
   const [params] = useSearchParams();
@@ -55,7 +55,7 @@ export function ExpiredPage() {
           </div>
         </div>
       </div>
-      <CoSealBranding />
+      <SendSignBranding />
     </div>
   );
 }

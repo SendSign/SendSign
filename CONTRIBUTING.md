@@ -1,6 +1,6 @@
-# Contributing to CoSeal
+# Contributing to SendSign
 
-Thank you for your interest in contributing to CoSeal! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to SendSign! This document provides guidelines and instructions for contributing.
 
 ---
 
@@ -20,7 +20,7 @@ Thank you for your interest in contributing to CoSeal! This document provides gu
 
 ## Code of Conduct
 
-CoSeal follows the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). By participating, you are expected to uphold this code.
+SendSign follows the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). By participating, you are expected to uphold this code.
 
 **In short:**
 - Be respectful and inclusive
@@ -35,12 +35,12 @@ CoSeal follows the [Contributor Covenant Code of Conduct](https://www.contributo
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/your-username/coseal.git
-   cd coseal
+   git clone https://github.com/your-username/sendsign.git
+   cd sendsign
    ```
 3. **Add upstream remote**:
    ```bash
-   git remote add upstream https://github.com/coseal/coseal.git
+   git remote add upstream https://github.com/sendsign/sendsign.git
    ```
 4. **Create a branch** for your work:
    ```bash
@@ -108,7 +108,7 @@ CoSeal follows the [Contributor Covenant Code of Conduct](https://www.contributo
 ## Project Structure
 
 ```
-coseal/
+sendsign/
 ├── src/                      # Backend API (TypeScript)
 │   ├── api/                  # Express routes and middleware
 │   │   ├── routes/           # Endpoint handlers
@@ -131,7 +131,7 @@ coseal/
 │   │   └── types/            # TypeScript interfaces
 ├── scripts/                  # Utility scripts (dev cert generation, e2e test)
 ├── docs/                     # Documentation
-├── coseal-plugin/            # Cowork plugin files
+├── sendsign-plugin/            # Cowork plugin files
 ├── deploy/                   # Deployment configs (future: Helm, Terraform)
 ├── tests/                    # Test files (*.test.ts)
 ├── docker-compose.yml        # Local development environment
@@ -145,7 +145,7 @@ coseal/
 
 ### 1. Pick an Issue
 
-Browse the [issue tracker](https://github.com/coseal/coseal/issues) and find an issue that interests you.
+Browse the [issue tracker](https://github.com/sendsign/sendsign/issues) and find an issue that interests you.
 
 - **Good first issues** are labeled `good first issue`
 - **Help wanted** issues are labeled `help wanted`
@@ -246,7 +246,7 @@ Go to GitHub and create a pull request from your branch to `main`.
 
 ## Testing
 
-CoSeal uses **Vitest** for testing.
+SendSign uses **Vitest** for testing.
 
 ### Running Tests
 
@@ -432,22 +432,22 @@ Looking for a place to start? Try these:
 - **RBAC:** Add role-based access control for multi-tenant deployments
 - **Real-time updates:** Add WebSocket support for live signing progress
 
-**Check the issue tracker for more:** [github.com/coseal/coseal/issues?q=is:issue+is:open+label:"good+first+issue"](https://github.com/coseal/coseal/issues?q=is:issue+is:open+label:%22good+first+issue%22)
+**Check the issue tracker for more:** [github.com/sendsign/sendsign/issues?q=is:issue+is:open+label:"good+first+issue"](https://github.com/sendsign/sendsign/issues?q=is:issue+is:open+label:%22good+first+issue%22)
 
 ---
 
 ## Questions?
 
-- **GitHub Discussions:** [github.com/coseal/coseal/discussions](https://github.com/coseal/coseal/discussions)
+- **GitHub Discussions:** [github.com/sendsign/sendsign/discussions](https://github.com/sendsign/sendsign/discussions)
 - **Discord:** (coming soon)
-- **Email:** contribute@coseal.dev
+- **Email:** contribute@sendsign.dev
 
 ---
 
 ## License
 
-By contributing to CoSeal, you agree that your contributions will be licensed under the BSD 3-Clause License with Branding Protection. See [LICENSE](./LICENSE) for details.
+By contributing to SendSign, you agree that your contributions will be licensed under the BSD 3-Clause License with Branding Protection. See [LICENSE](./LICENSE) for details.
 
 ---
 
-Thank you for contributing to CoSeal! 🎉
+Thank you for contributing to SendSign! 🎉

@@ -13,7 +13,7 @@ import { hashDocument } from './hasher.js';
  *
  * Note: Full PAdES embedding in the PDF signature dictionary requires
  * byte-range calculation that is complex. This v0.1 approach stores
- * the signature as embedded metadata, making it verifiable without CoSeal.
+ * the signature as embedded metadata, making it verifiable without SendSign.
  * Full PAdES support is planned for Phase 2.
  */
 export interface IdentityEvidence {
@@ -76,7 +76,7 @@ export async function sealDocument(
 
   // Set custom metadata for verification
   const sealInfo: Record<string, unknown> = {
-    coseal_version: '0.1.0',
+    sendsign_version: '0.1.0',
     sealed_at: new Date().toISOString(),
     document_hash: docHash,
     hash_algorithm: 'SHA-256',
@@ -102,17 +102,17 @@ export async function sealDocument(
 
   pdfDoc.setTitle(pdfDoc.getTitle() ?? 'Sealed Document');
   pdfDoc.setSubject(JSON.stringify(sealInfo));
-  pdfDoc.setProducer('CoSeal v0.1.0 — Open Source E-Signature Engine');
+  pdfDoc.setProducer('SendSign v0.1.0 — Open Source E-Signature Engine');
 
   // 6. Attach the full signature and certificate as embedded files
-  await pdfDoc.attach(Buffer.from(signatureHex, 'hex'), 'coseal-signature.p7s', {
+  await pdfDoc.attach(Buffer.from(signatureHex, 'hex'), 'sendsign-signature.p7s', {
     mimeType: 'application/pkcs7-signature',
-    description: 'CoSeal PKCS#7 Digital Signature',
+    description: 'SendSign PKCS#7 Digital Signature',
   });
 
-  await pdfDoc.attach(Buffer.from(certPem, 'utf-8'), 'coseal-certificate.pem', {
+  await pdfDoc.attach(Buffer.from(certPem, 'utf-8'), 'sendsign-certificate.pem', {
     mimeType: 'application/x-pem-file',
-    description: 'CoSeal Signing Certificate',
+    description: 'SendSign Signing Certificate',
   });
 
   const sealBytes = await pdfDoc.save();
@@ -141,7 +141,7 @@ export async function verifySealedDocument(
   try {
     const sealInfo = JSON.parse(subject);
 
-    if (!sealInfo.coseal_version || !sealInfo.document_hash) {
+    if (!sealInfo.sendsign_version || !sealInfo.document_hash) {
       return { valid: false, documentHash: '', sealedAt: '', certificateSubject: '' };
     }
 

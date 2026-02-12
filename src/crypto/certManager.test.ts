@@ -28,7 +28,7 @@ describe('generateSelfSignedCert', () => {
 
     expect(key).toBeTruthy();
     expect(cert).toBeTruthy();
-    expect(cert.subject.getField('CN')?.value).toBe('CoSeal Self-Signed Certificate');
+    expect(cert.subject.getField('CN')?.value).toBe('SendSign Self-Signed Certificate');
   });
 
   it('generates a certificate valid for 10 years', async () => {

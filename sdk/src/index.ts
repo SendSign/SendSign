@@ -1,16 +1,16 @@
 /**
- * CoSeal SDK — Open Source E-Signature Client
+ * SendSign SDK — Open Source E-Signature Client
  *
  * @example
  * ```typescript
- * import { CoSealClient } from '@coseal/sdk';
+ * import { SendSignClient } from '@sendsign/sdk';
  *
- * const coseal = new CoSealClient({
+ * const sendsign = new SendSignClient({
  *   baseUrl: 'https://sign.yourcompany.com',
  *   apiKey: 'your-api-key',
  * });
  *
- * const envelope = await coseal.createEnvelope({
+ * const envelope = await sendsign.createEnvelope({
  *   document: fs.readFileSync('contract.pdf'),
  *   subject: 'Please sign the MSA',
  *   signers: [
@@ -18,17 +18,17 @@
  *   ],
  * });
  *
- * await coseal.sendEnvelope(envelope.id);
+ * await sendsign.sendEnvelope(envelope.id);
  * ```
  *
- * @module @coseal/sdk
+ * @module @sendsign/sdk
  */
 
-export { CoSealClient } from './client.js';
+export { SendSignClient } from './client.js';
 
 // Types
 export type {
-  CoSealConfig,
+  SendSignConfig,
   CreateEnvelopeInput,
   SignerInput,
   FieldInput,
@@ -53,7 +53,7 @@ export type {
 
 // Errors
 export {
-  CoSealError,
+  SendSignError,
   AuthenticationError,
   NotFoundError,
   ValidationError,

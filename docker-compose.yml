@@ -3,24 +3,24 @@ version: '3.8'
 services:
   db:
     image: postgres:16-alpine
-    container_name: coseal-db
+    container_name: sendsign-db
     environment:
-      POSTGRES_DB: coseal
-      POSTGRES_USER: coseal
+      POSTGRES_DB: sendsign
+      POSTGRES_USER: sendsign
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U coseal"]
+      test: ["CMD-SHELL", "pg_isready -U sendsign"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   minio:
     image: minio/minio:latest
-    container_name: coseal-minio
+    container_name: sendsign-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -38,15 +38,15 @@ services:
 
   createbuckets:
     image: minio/mc:latest
-    container_name: coseal-createbuckets
+    container_name: sendsign-createbuckets
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb myminio/coseal-documents --ignore-existing;
-      /usr/bin/mc anonymous set public myminio/coseal-documents;
+      /usr/bin/mc mb myminio/sendsign-documents --ignore-existing;
+      /usr/bin/mc anonymous set public myminio/sendsign-documents;
       exit 0;
       "
 
@@ -54,7 +54,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: coseal-api
+    container_name: sendsign-api
     depends_on:
       db:
         condition: service_healthy
@@ -63,7 +63,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://coseal:password@db:5432/coseal
+      DATABASE_URL: postgresql://sendsign:password@db:5432/sendsign
       S3_ENDPOINT: http://minio:9000
       NODE_ENV: development
     ports:

@@ -1,10 +1,10 @@
 /**
- * CoSeal SDK client.
- * @module @coseal/sdk
+ * SendSign SDK client.
+ * @module @sendsign/sdk
  */
 
 import type {
-  CoSealConfig,
+  SendSignConfig,
   CreateEnvelopeInput,
   Envelope,
   EnvelopeFilters,
@@ -20,7 +20,7 @@ import type {
 } from './types.js';
 
 import {
-  CoSealError,
+  SendSignError,
   AuthenticationError,
   NotFoundError,
   ValidationError,
@@ -31,18 +31,18 @@ import {
 } from './errors.js';
 
 /**
- * Main CoSeal SDK client.
+ * Main SendSign SDK client.
  *
  * @example
  * ```typescript
- * import { CoSealClient } from '@coseal/sdk';
+ * import { SendSignClient } from '@sendsign/sdk';
  *
- * const coseal = new CoSealClient({
+ * const sendsign = new SendSignClient({
  *   baseUrl: 'https://sign.yourcompany.com',
  *   apiKey: 'your-api-key',
  * });
  *
- * const envelope = await coseal.createEnvelope({
+ * const envelope = await sendsign.createEnvelope({
  *   document: fs.readFileSync('contract.pdf'),
  *   subject: 'Please sign the MSA',
  *   signers: [
@@ -50,16 +50,16 @@ import {
  *   ],
  * });
  *
- * await coseal.sendEnvelope(envelope.id);
+ * await sendsign.sendEnvelope(envelope.id);
  * ```
  */
-export class CoSealClient {
+export class SendSignClient {
   private readonly baseUrl: string;
   private readonly apiKey: string;
   private readonly timeout: number;
   private readonly fetchFn: typeof fetch;
 
-  constructor(config: CoSealConfig) {
+  constructor(config: SendSignConfig) {
     if (!config.baseUrl) throw new Error('baseUrl is required');
     if (!config.apiKey) throw new Error('apiKey is required');
 
@@ -150,7 +150,7 @@ export class CoSealClient {
     const envelope = await this.getEnvelope(envelopeId);
     const signer = envelope.signers.find((s) => s.id === signerId);
     if (!signer) throw new NotFoundError('Signer', signerId);
-    if (!signer.signingToken) throw new CoSealError('Signer does not have a signing token. Send the envelope first.', 'NO_TOKEN');
+    if (!signer.signingToken) throw new SendSignError('Signer does not have a signing token. Send the envelope first.', 'NO_TOKEN');
     return `${this.baseUrl}/sign/${signer.signingToken}`;
   }
 
@@ -313,7 +313,7 @@ export class CoSealClient {
    *
    * @example
    * ```typescript
-   * coseal.embedSigning({
+   * sendsign.embedSigning({
    *   containerId: 'signing-container',
    *   token: 'abc123',
    *   onSigned: (data) => console.log('Signed!', data),
@@ -347,17 +347,17 @@ export class CoSealClient {
       const { type, data } = event.data ?? {};
 
       switch (type) {
-        case 'coseal:ready':
+        case 'sendsign:ready':
           options.onReady?.();
           break;
-        case 'coseal:signed':
+        case 'sendsign:signed':
           options.onSigned?.(data);
           break;
-        case 'coseal:declined':
+        case 'sendsign:declined':
           options.onDeclined?.(data);
           break;
-        case 'coseal:error':
-          options.onError?.(new CoSealError(data.message, 'EMBED_ERROR'));
+        case 'sendsign:error':
+          options.onError?.(new SendSignError(data.message, 'EMBED_ERROR'));
           break;
       }
     };
@@ -388,7 +388,7 @@ export class CoSealClient {
     const json: ApiResponse<T> = await response.json();
 
     if (!json.success) {
-      throw new CoSealError(json.error ?? 'Unknown error', 'API_ERROR', response.status);
+      throw new SendSignError(json.error ?? 'Unknown error', 'API_ERROR', response.status);
     }
 
     return json.data as T;
@@ -413,13 +413,13 @@ export class CoSealClient {
 
       const json: ApiResponse<T> = await response.json();
       if (!json.success) {
-        throw new CoSealError(json.error ?? 'Unknown error', 'API_ERROR', response.status);
+        throw new SendSignError(json.error ?? 'Unknown error', 'API_ERROR', response.status);
       }
 
       return json.data as T;
     } catch (error) {
       clearTimeout(timeoutId);
-      if (error instanceof CoSealError) throw error;
+      if (error instanceof SendSignError) throw error;
       if ((error as Error).name === 'AbortError') throw new TimeoutError(this.timeout);
       throw new NetworkError((error as Error).message);
     }
@@ -457,7 +457,7 @@ export class CoSealClient {
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
-      if (error instanceof CoSealError) throw error;
+      if (error instanceof SendSignError) throw error;
       if ((error as Error).name === 'AbortError') throw new TimeoutError(this.timeout);
       throw new NetworkError((error as Error).message);
     }
@@ -482,7 +482,7 @@ export class CoSealClient {
       case 503:
         throw new ServerError();
       default:
-        throw new CoSealError(`HTTP ${response.status}: ${response.statusText}`, 'HTTP_ERROR', response.status);
+        throw new SendSignError(`HTTP ${response.status}: ${response.statusText}`, 'HTTP_ERROR', response.status);
     }
   }
 }

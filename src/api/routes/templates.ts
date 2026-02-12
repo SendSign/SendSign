@@ -6,6 +6,7 @@ import { templates } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { requireRole } from '../middleware/rbac.js';
+import { checkLimit } from '../../control/services/usageMeter.js';
 
 const router = Router();
 
@@ -24,9 +25,27 @@ const createTemplateSchema = z.object({
 router.post('/', requireRole('admin', 'sender'), validate(createTemplateSchema), async (req, res) => {
   const db = getDb();
 
+  // Check template limit
+  if (req.tenant?.id) {
+    const limitCheck = await checkLimit(req.tenant.id, 'templates');
+    if (!limitCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: 'Template limit reached',
+        message: limitCheck.message,
+        data: {
+          plan: req.tenant.plan,
+          limit: limitCheck.limit,
+          used: limitCheck.current,
+        },
+      });
+    }
+  }
+
   const [template] = await db
     .insert(templates)
     .values({
+      tenantId: req.tenant!.id,
       id: uuidv4(),
       name: req.body.name,
       description: req.body.description,
@@ -202,6 +221,24 @@ router.put('/:id/unlock', requireRole('admin'), async (req, res) => {
  */
 router.post('/:id/duplicate', requireRole('admin', 'sender'), async (req, res) => {
   const db = getDb();
+
+  // Check template limit
+  if (req.tenant?.id) {
+    const limitCheck = await checkLimit(req.tenant.id, 'templates');
+    if (!limitCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: 'Template limit reached',
+        message: limitCheck.message,
+        data: {
+          plan: req.tenant.plan,
+          limit: limitCheck.limit,
+          used: limitCheck.current,
+        },
+      });
+    }
+  }
+
   const [originalTemplate] = await db
     .select()
     .from(templates)
@@ -215,6 +252,7 @@ router.post('/:id/duplicate', requireRole('admin', 'sender'), async (req, res) =
   const [duplicateTemplate] = await db
     .insert(templates)
     .values({
+      tenantId: req.tenant!.id,
       organizationId: originalTemplate.organizationId,
       name: `${originalTemplate.name} (Copy)`,
       description: originalTemplate.description,

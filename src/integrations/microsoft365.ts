@@ -1,13 +1,13 @@
 /**
- * Microsoft 365 / SharePoint integration for CoSeal.
+ * Microsoft 365 / SharePoint integration for SendSign.
  * Auto-uploads completed sealed documents to OneDrive or SharePoint.
  */
 
-import type { CoSealIntegration } from './types.js';
+import type { SendSignIntegration } from './types.js';
 import type { Envelope } from '../db/schema.js';
 import { downloadDocument } from '../storage/documentStore.js';
 
-export class Microsoft365Integration implements CoSealIntegration {
+export class Microsoft365Integration implements SendSignIntegration {
   readonly name = 'microsoft365';
   readonly displayName = 'Microsoft 365';
   readonly description = 'Automatically upload completed documents to OneDrive or SharePoint';

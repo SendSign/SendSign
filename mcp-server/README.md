@@ -1,6 +1,6 @@
-# CoSeal MCP Server
+# SendSign MCP Server
 
-An MCP (Model Context Protocol) server that exposes CoSeal e-signature tools to Claude Desktop and Cowork. This lets Claude create, send, check, and manage signature envelopes through natural conversation.
+An MCP (Model Context Protocol) server that exposes SendSign e-signature tools to Claude Desktop and Cowork. This lets Claude create, send, check, and manage signature envelopes through natural conversation.
 
 ## Tools
 
@@ -32,12 +32,12 @@ Add the following to your Claude Desktop config file:
 ```json
 {
   "mcpServers": {
-    "coseal": {
+    "sendsign": {
       "command": "node",
-      "args": ["/Users/YOU/Desktop/CoSeal/mcp-server/dist/index.js"],
+      "args": ["/Users/YOU/Desktop/SendSign/mcp-server/dist/index.js"],
       "env": {
-        "COSEAL_API_URL": "http://localhost:3000",
-        "COSEAL_API_KEY": "dev_local_api_key_change_this_in_production"
+        "SENDSIGN_API_URL": "http://localhost:3000",
+        "SENDSIGN_API_KEY": "dev_local_api_key_change_this_in_production"
       }
     }
   }
@@ -48,7 +48,7 @@ Replace the path and API key with your actual values.
 
 ### 3. Restart Claude Desktop
 
-After saving the config, restart Claude Desktop. You should see "coseal" appear in the MCP tools list.
+After saving the config, restart Claude Desktop. You should see "sendsign" appear in the MCP tools list.
 
 ## Configure for Cursor / Cowork
 
@@ -57,12 +57,12 @@ Add to your `.cursor/mcp.json` (workspace-level) or `~/.cursor/mcp.json` (global
 ```json
 {
   "mcpServers": {
-    "coseal": {
+    "sendsign": {
       "command": "node",
-      "args": ["/Users/YOU/Desktop/CoSeal/mcp-server/dist/index.js"],
+      "args": ["/Users/YOU/Desktop/SendSign/mcp-server/dist/index.js"],
       "env": {
-        "COSEAL_API_URL": "http://localhost:3000",
-        "COSEAL_API_KEY": "dev_local_api_key_change_this_in_production"
+        "SENDSIGN_API_URL": "http://localhost:3000",
+        "SENDSIGN_API_KEY": "dev_local_api_key_change_this_in_production"
       }
     }
   }
@@ -95,8 +95,8 @@ Starts an HTTP server on port 3001 with SSE transport. Use this for Cowork, remo
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `COSEAL_API_URL` | `http://localhost:3000` | Base URL of your CoSeal instance |
-| `COSEAL_API_KEY` | *(required)* | API key for authentication |
+| `SENDSIGN_API_URL` | `http://localhost:3000` | Base URL of your SendSign instance |
+| `SENDSIGN_API_KEY` | *(required)* | API key for authentication |
 | `MCP_HTTP_PORT` | `3001` | Port for HTTP+SSE mode |
 
 ## Example Conversation
@@ -138,16 +138,16 @@ Claude Desktop / Cowork
   │  stdio (MCP protocol)
   │
   ▼
-CoSeal MCP Server (this package)
+SendSign MCP Server (this package)
   │
   │  HTTP REST API
   │
   ▼
-CoSeal API Server (port 3000)
+SendSign API Server (port 3000)
   │
   ├── PostgreSQL (envelopes, signers, audit)
   ├── Local/S3 Storage (encrypted documents)
   └── Signing UI (React SPA)
 ```
 
-The MCP server is a thin translation layer: it converts Claude's tool calls into CoSeal REST API requests and formats the responses as readable text for Claude.
+The MCP server is a thin translation layer: it converts Claude's tool calls into SendSign REST API requests and formats the responses as readable text for Claude.

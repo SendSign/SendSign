@@ -1,10 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: coseal
-  namespace: coseal
+  name: sendsign
+  namespace: sendsign
   labels:
-    app.kubernetes.io/name: coseal
+    app.kubernetes.io/name: sendsign
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
@@ -15,7 +15,7 @@ spec:
   tls:
     - hosts:
         - sign.example.com
-      secretName: coseal-tls
+      secretName: sendsign-tls
   rules:
     - host: sign.example.com
       http:
@@ -24,6 +24,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: coseal
+                name: sendsign
                 port:
                   number: 80

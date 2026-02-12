@@ -40,7 +40,7 @@ const configSchema = z.object({
 
   // Storage (S3-compatible) - only required when storageType=s3
   s3Endpoint: z.string().optional(),
-  s3Bucket: z.string().default('coseal-documents'),
+  s3Bucket: z.string().default('sendsign-documents'),
   s3AccessKey: z.string().optional(),
   s3SecretKey: z.string().optional(),
   s3Region: z.string().default('us-east-1'),
@@ -55,7 +55,7 @@ const configSchema = z.object({
   // Email (SendGrid)
   sendgridApiKey: z.string().optional(),
   sendgridFromEmail: z.string().optional(),
-  sendgridFromName: z.string().default('CoSeal'),
+  sendgridFromName: z.string().default('SendSign'),
 
   // Email (SMTP Fallback)
   smtpHost: z.string().optional(),
@@ -85,7 +85,7 @@ const configSchema = z.object({
   rateLimitMaxRequests: z.number().int().positive().default(100),
 
   // Branding
-  cosealBrandingEntitlement: z.string().optional(),
+  sendsignBrandingEntitlement: z.string().optional(),
 
   // Identity Verification (AES)
   jumioApiKey: z.string().optional(),
@@ -119,8 +119,8 @@ export function loadConfig(): Config {
     // Server
     port: envInt('PORT'),
     nodeEnv: env('NODE_ENV'),
-    apiKey: env('API_KEY') ?? env('COSEAL_API_KEY'),
-    baseUrl: env('BASE_URL') ?? env('COSEAL_BASE_URL'),
+    apiKey: env('API_KEY') ?? env('SENDSIGN_API_KEY'),
+    baseUrl: env('BASE_URL') ?? env('SENDSIGN_BASE_URL'),
 
     // Database
     databaseUrl: env('DATABASE_URL'),
@@ -138,8 +138,8 @@ export function loadConfig(): Config {
     encryptionKey: env('ENCRYPTION_KEY'),
 
     // Signing Certificates
-    signingCertPath: env('SIGNING_CERT_PATH') ?? env('COSEAL_SIGNING_CERT_PATH'),
-    signingKeyPath: env('SIGNING_KEY_PATH') ?? env('COSEAL_SIGNING_KEY_PATH'),
+    signingCertPath: env('SIGNING_CERT_PATH') ?? env('SENDSIGN_SIGNING_CERT_PATH'),
+    signingKeyPath: env('SIGNING_KEY_PATH') ?? env('SENDSIGN_SIGNING_KEY_PATH'),
 
     // Email (SendGrid)
     sendgridApiKey: env('SENDGRID_API_KEY'),
@@ -174,7 +174,7 @@ export function loadConfig(): Config {
     rateLimitMaxRequests: envInt('RATE_LIMIT_MAX_REQUESTS'),
 
     // Branding
-    cosealBrandingEntitlement: env('COSEAL_BRANDING_ENTITLEMENT'),
+    sendsignBrandingEntitlement: env('SENDSIGN_BRANDING_ENTITLEMENT'),
 
     // Identity Verification (AES)
     jumioApiKey: env('JUMIO_API_KEY'),
@@ -213,7 +213,7 @@ export function validateConfig(rawConfig: unknown): Config {
       .join('\n');
 
     console.error('╔══════════════════════════════════════════════════╗');
-    console.error('║  CoSeal Configuration Error — Startup Aborted   ║');
+    console.error('║  SendSign Configuration Error — Startup Aborted   ║');
     console.error('╚══════════════════════════════════════════════════╝');
     console.error('');
     console.error('Missing or invalid environment variables:');
@@ -229,7 +229,7 @@ export function validateConfig(rawConfig: unknown): Config {
   if (config.storageType === 's3') {
     if (!config.s3Endpoint || !config.s3AccessKey || !config.s3SecretKey) {
       console.error('╔══════════════════════════════════════════════════╗');
-      console.error('║  CoSeal Configuration Error — Startup Aborted   ║');
+      console.error('║  SendSign Configuration Error — Startup Aborted   ║');
       console.error('╚══════════════════════════════════════════════════╝');
       console.error('');
       console.error('STORAGE_TYPE is set to "s3" but S3 credentials are missing.');

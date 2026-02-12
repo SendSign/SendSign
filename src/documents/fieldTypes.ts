@@ -1,5 +1,5 @@
 /**
- * Field type definitions for CoSeal documents.
+ * Field type definitions for SendSign documents.
  *
  * All coordinates are percentages (0-100) relative to page dimensions.
  */

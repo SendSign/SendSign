@@ -1,26 +1,26 @@
 /**
- * CoSeal SDK error classes.
- * @module @coseal/sdk
+ * SendSign SDK error classes.
+ * @module @sendsign/sdk
  */
 
 /**
- * Base error class for all CoSeal SDK errors.
+ * Base error class for all SendSign SDK errors.
  */
-export class CoSealError extends Error {
+export class SendSignError extends Error {
   constructor(
     message: string,
     public readonly code: string,
     public readonly statusCode?: number,
   ) {
     super(message);
-    this.name = 'CoSealError';
+    this.name = 'SendSignError';
   }
 }
 
 /**
  * Thrown when API authentication fails.
  */
-export class AuthenticationError extends CoSealError {
+export class AuthenticationError extends SendSignError {
   constructor(message: string = 'Invalid or missing API key') {
     super(message, 'AUTHENTICATION_ERROR', 401);
     this.name = 'AuthenticationError';
@@ -30,7 +30,7 @@ export class AuthenticationError extends CoSealError {
 /**
  * Thrown when a requested resource is not found.
  */
-export class NotFoundError extends CoSealError {
+export class NotFoundError extends SendSignError {
   constructor(resource: string, id: string) {
     super(`${resource} not found: ${id}`, 'NOT_FOUND', 404);
     this.name = 'NotFoundError';
@@ -40,7 +40,7 @@ export class NotFoundError extends CoSealError {
 /**
  * Thrown when the request payload is invalid.
  */
-export class ValidationError extends CoSealError {
+export class ValidationError extends SendSignError {
   constructor(
     message: string,
     public readonly details?: Record<string, string[]>,
@@ -53,7 +53,7 @@ export class ValidationError extends CoSealError {
 /**
  * Thrown when rate limit is exceeded.
  */
-export class RateLimitError extends CoSealError {
+export class RateLimitError extends SendSignError {
   constructor(
     public readonly retryAfter?: number,
   ) {
@@ -69,7 +69,7 @@ export class RateLimitError extends CoSealError {
 /**
  * Thrown when the server returns an unexpected error.
  */
-export class ServerError extends CoSealError {
+export class ServerError extends SendSignError {
   constructor(message: string = 'Internal server error') {
     super(message, 'SERVER_ERROR', 500);
     this.name = 'ServerError';
@@ -79,7 +79,7 @@ export class ServerError extends CoSealError {
 /**
  * Thrown when a network request times out.
  */
-export class TimeoutError extends CoSealError {
+export class TimeoutError extends SendSignError {
   constructor(timeoutMs: number) {
     super(`Request timed out after ${timeoutMs}ms`, 'TIMEOUT_ERROR');
     this.name = 'TimeoutError';
@@ -89,7 +89,7 @@ export class TimeoutError extends CoSealError {
 /**
  * Thrown when a network error occurs.
  */
-export class NetworkError extends CoSealError {
+export class NetworkError extends SendSignError {
   constructor(message: string = 'Network error') {
     super(message, 'NETWORK_ERROR');
     this.name = 'NetworkError';

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { eq, desc } from 'drizzle-orm';
 import { getDb } from '../db/connection.js';
-import { auditEvents } from '../db/schema.js';
+import { auditEvents, envelopes } from '../db/schema.js';
 import type { AuditEvent, CreateAuditEvent } from './eventTypes.js';
 
 /**
@@ -76,12 +76,28 @@ export async function logEvent(event: CreateAuditEvent): Promise<AuditEvent> {
       previousHash: previousHash ?? undefined,
     });
 
+    // Fetch tenant from envelope
+    let tenantId = '00000000-0000-0000-0000-000000000001'; // default
+    try {
+      const [envelope] = await db
+        .select({ tenantId: envelopes.tenantId })
+        .from(envelopes)
+        .where(eq(envelopes.id, event.envelopeId))
+        .limit(1);
+      if (envelope) {
+        tenantId = envelope.tenantId;
+      }
+    } catch {
+      // Use default tenant if envelope fetch fails
+    }
+
     // Resolve geolocation from IP
     const geolocation = await resolveGeolocation(event.ipAddress);
 
     const [inserted] = await db
       .insert(auditEvents)
       .values({
+        tenantId,
         envelopeId: event.envelopeId,
         signerId: event.signerId,
         eventType: event.eventType,

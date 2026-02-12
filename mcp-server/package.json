@@ -1,11 +1,11 @@
 {
-  "name": "@coseal/mcp-server",
+  "name": "@sendsign/mcp-server",
   "version": "0.1.0",
-  "description": "MCP server for CoSeal — exposes e-signature tools to Claude Desktop / Cowork",
+  "description": "MCP server for SendSign — exposes e-signature tools to Claude Desktop / Cowork",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "coseal-mcp": "dist/index.js"
+    "sendsign-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -14,7 +14,7 @@
     "dev": "tsx src/index.ts",
     "dev:http": "tsx src/index.ts --http"
   },
-  "keywords": ["mcp", "coseal", "e-signature", "claude", "cowork"],
+  "keywords": ["mcp", "sendsign", "e-signature", "claude", "cowork"],
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",

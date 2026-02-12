@@ -2,17 +2,17 @@
   "_comment": "Pick ONE of these modes. HTTP+SSE is recommended if stdio blocks Claude Desktop startup.",
 
   "mcpServers": {
-    "coseal": {
+    "sendsign": {
       "_comment_stdio": "Option A: stdio transport (Claude spawns the process)",
       "command": "node",
-      "args": ["/FULL/PATH/TO/CoSeal/mcp-server/dist/index.js"],
+      "args": ["/FULL/PATH/TO/SendSign/mcp-server/dist/index.js"],
       "env": {
-        "COSEAL_API_URL": "http://localhost:3000",
-        "COSEAL_API_KEY": "YOUR_API_KEY_HERE"
+        "SENDSIGN_API_URL": "http://localhost:3000",
+        "SENDSIGN_API_KEY": "YOUR_API_KEY_HERE"
       }
     },
 
-    "coseal-sse": {
+    "sendsign-sse": {
       "_comment_sse": "Option B: HTTP+SSE (start server separately, then point Claude at it)",
       "url": "http://localhost:3001/sse"
     }

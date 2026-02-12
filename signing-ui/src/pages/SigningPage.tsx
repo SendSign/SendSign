@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MessageSquare } from 'lucide-react';
 import { PDFViewer } from '../components/PDFViewer';
 import { FieldOverlay } from '../components/FieldOverlay';
-import { CoSealBranding } from '../components/CoSealBranding';
+import { SendSignBranding } from '../components/SendSignBranding';
 import { CommentPanel } from '../components/CommentPanel';
 import { ConsentModal } from '../components/ConsentModal';
 import { useFieldState } from '../hooks/useFieldLogic';
@@ -489,7 +489,7 @@ export function SigningPage() {
         </div>
       )}
 
-      <CoSealBranding />
+      <SendSignBranding />
 
       {/* Comment Panel */}
       {token && (

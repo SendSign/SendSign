@@ -45,7 +45,7 @@ let brandingCache: {
   emailFooter: string | null;
   loaded: boolean;
 } = {
-  companyName: 'CoSeal',
+  companyName: 'SendSign',
   primaryColor: '#2563EB',
   logoUrl: null,
   emailFooter: null,
@@ -68,7 +68,7 @@ async function loadBrandingConfig(): Promise<typeof brandingCache> {
     if (configs.length > 0) {
       const config = configs[0];
       brandingCache = {
-        companyName: config.companyName || 'CoSeal',
+        companyName: config.companyName || 'SendSign',
         primaryColor: config.primaryColor || '#2563EB',
         logoUrl: config.logoUrl || null,
         emailFooter: config.emailFooter || null,
@@ -133,7 +133,7 @@ async function sendEmail(
     await loadBrandingConfig();
   }
 
-  const from = process.env.SENDGRID_FROM_EMAIL ?? process.env.SMTP_FROM ?? 'noreply@coseal.local';
+  const from = process.env.SENDGRID_FROM_EMAIL ?? process.env.SMTP_FROM ?? 'noreply@sendsign.local';
   const fromName = process.env.SENDGRID_FROM_NAME ?? brandingCache.companyName;
 
   if (sendgridConfigured) {

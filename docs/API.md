@@ -1,4 +1,4 @@
-# CoSeal REST API Reference
+# SendSign REST API Reference
 
 ## Base URL
 
@@ -6,7 +6,7 @@
 http://localhost:3000/api
 ```
 
-For production, use your deployed CoSeal service URL.
+For production, use your deployed SendSign service URL.
 
 ## Authentication
 
@@ -617,7 +617,7 @@ Remove a webhook.
 
 ## Webhook Payload
 
-When an event occurs, CoSeal sends a POST request to your webhook URL:
+When an event occurs, SendSign sends a POST request to your webhook URL:
 
 ```json
 {
@@ -634,8 +634,8 @@ When an event occurs, CoSeal sends a POST request to your webhook URL:
 
 **Headers:**
 ```
-X-CoSeal-Signature: sha256=<hmac-signature>
-X-CoSeal-Event: signer.signed
+X-SendSign-Signature: sha256=<hmac-signature>
+X-SendSign-Event: signer.signed
 ```
 
 **Verifying webhook signatures:**
@@ -1046,7 +1046,7 @@ POST /api/organizations/:id/api-keys
   "success": true,
   "data": {
     "id": "key_abc123",
-    "key": "coseal_0123456789abcdef...",
+    "key": "sendsign_0123456789abcdef...",
     "name": "Production Key",
     "expiresAt": "2027-02-07T00:00:00Z"
   }
@@ -1319,23 +1319,23 @@ uuid,NDA,120,94%,1.8h
 
 ### TypeScript / Node.js SDK
 
-The official SDK is available at **`@coseal/sdk`**:
+The official SDK is available at **`@sendsign/sdk`**:
 
 ```bash
-npm install @coseal/sdk
+npm install @sendsign/sdk
 ```
 
 **Quick example:**
 ```typescript
-import { CoSealClient } from '@coseal/sdk';
+import { SendSignClient } from '@sendsign/sdk';
 import fs from 'fs';
 
-const coseal = new CoSealClient({
+const sendsign = new SendSignClient({
   baseUrl: 'https://sign.yourcompany.com',
   apiKey: 'your-api-key',
 });
 
-const envelope = await coseal.createEnvelope({
+const envelope = await sendsign.createEnvelope({
   document: fs.readFileSync('contract.pdf'),
   subject: 'Please sign the MSA',
   signers: [
@@ -1343,7 +1343,7 @@ const envelope = await coseal.createEnvelope({
   ],
 });
 
-await coseal.sendEnvelope(envelope.id);
+await sendsign.sendEnvelope(envelope.id);
 ```
 
 See `sdk/README.md` for full documentation.
@@ -1371,7 +1371,7 @@ POST /api/envelopes/:id/embedded-signing
 {
   "success": true,
   "data": {
-    "url": "https://coseal.example.com/sign/TOKEN?embed=true&returnUrl=...",
+    "url": "https://sendsign.example.com/sign/TOKEN?embed=true&returnUrl=...",
     "expiresAt": "2026-02-10T12:00:00Z"
   }
 }
@@ -1397,7 +1397,7 @@ GET /api/admin/branding
     "primaryColor": "#2563EB",
     "secondaryColor": "#1E40AF",
     "accentColor": "#3B82F6",
-    "companyName": "CoSeal",
+    "companyName": "SendSign",
     "emailFooter": null,
     "signingHeader": null,
     "logoUrl": null,
@@ -1415,7 +1415,7 @@ GET /api/admin/branding
 PUT /api/admin/branding
 ```
 
-**Requires:** `COSEAL_BRANDING_ENTITLEMENT` environment variable + admin role.
+**Requires:** `SENDSIGN_BRANDING_ENTITLEMENT` environment variable + admin role.
 
 **Request body:**
 ```json
@@ -1443,12 +1443,12 @@ PUT /api/admin/branding
 DELETE /api/admin/branding
 ```
 
-Resets all branding to CoSeal defaults.
+Resets all branding to SendSign defaults.
 
 ---
 
 ## Support
 
-- **Documentation**: [https://github.com/coseal/coseal](https://github.com/coseal/coseal)
-- **Issues**: [https://github.com/coseal/coseal/issues](https://github.com/coseal/coseal/issues)
-- **Discussions**: [https://github.com/coseal/coseal/discussions](https://github.com/coseal/coseal/discussions)
+- **Documentation**: [https://github.com/sendsign/sendsign](https://github.com/sendsign/sendsign)
+- **Issues**: [https://github.com/sendsign/sendsign/issues](https://github.com/sendsign/sendsign/issues)
+- **Discussions**: [https://github.com/sendsign/sendsign/discussions](https://github.com/sendsign/sendsign/discussions)

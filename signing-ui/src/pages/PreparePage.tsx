@@ -267,10 +267,10 @@ export function PreparePage() {
       const params = new URLSearchParams(window.location.search);
       const fromUrl = params.get('apiKey');
       if (fromUrl) {
-        sessionStorage.setItem('coseal_api_key', fromUrl);
+        sessionStorage.setItem('sendsign_api_key', fromUrl);
         apiKey.current = fromUrl;
       } else {
-        apiKey.current = sessionStorage.getItem('coseal_api_key') || '';
+        apiKey.current = sessionStorage.getItem('sendsign_api_key') || '';
       }
     }
   }

@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug or issue with CoSeal
+about: Report a bug or issue with SendSign
 title: '[BUG] '
 labels: bug
 assignees: ''
@@ -31,7 +31,7 @@ If applicable, add screenshots to help explain the problem.
 
 ## Environment
 
-- **CoSeal Version**: [e.g., 0.1.0]
+- **SendSign Version**: [e.g., 0.1.0]
 - **Deployment**: [Docker, Kubernetes, local dev, etc.]
 - **OS**: [e.g., macOS, Linux, Windows]
 - **Browser** (if UI bug): [e.g., Chrome 120, Safari 17]

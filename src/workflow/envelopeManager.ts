@@ -6,6 +6,7 @@ import { logEvent } from '../audit/auditLogger.js';
 import { assignToken } from '../ceremony/tokenGenerator.js';
 
 export interface CreateEnvelopeInput {
+  tenantId: string;
   subject: string;
   message?: string;
   signingOrder?: string;
@@ -94,6 +95,7 @@ export async function createEnvelope(input: CreateEnvelopeInput): Promise<Envelo
   const [envelope] = await db
     .insert(envelopes)
     .values({
+      tenantId: input.tenantId,
       id: envelopeId,
       subject: input.subject,
       message: input.message,
@@ -109,6 +111,7 @@ export async function createEnvelope(input: CreateEnvelopeInput): Promise<Envelo
 
   // Insert signers
   const signerInserts = input.signers.map((s, idx) => ({
+    tenantId: input.tenantId,
     id: uuidv4(),
     envelopeId,
     name: s.name,
@@ -127,6 +130,7 @@ export async function createEnvelope(input: CreateEnvelopeInput): Promise<Envelo
   let insertedFields: Array<typeof fields.$inferSelect> = [];
   if (input.fields && input.fields.length > 0) {
     const fieldInserts = input.fields.map((f) => ({
+      tenantId: input.tenantId,
       id: uuidv4(),
       envelopeId,
       documentId: f.documentId,

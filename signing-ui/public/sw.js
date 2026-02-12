@@ -1,9 +1,9 @@
 /**
- * CoSeal Service Worker
+ * SendSign Service Worker
  * Provides offline resilience by caching the signing UI shell.
  */
 
-const CACHE_NAME = 'coseal-v1';
+const CACHE_NAME = 'sendsign-v1';
 const SHELL_FILES = [
   '/',
   '/index.html',

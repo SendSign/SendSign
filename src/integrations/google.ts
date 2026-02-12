@@ -1,13 +1,13 @@
 /**
- * Google Drive integration for CoSeal.
+ * Google Drive integration for SendSign.
  * Auto-uploads completed sealed documents to Google Drive.
  */
 
-import type { CoSealIntegration } from './types.js';
+import type { SendSignIntegration } from './types.js';
 import type { Envelope } from '../db/schema.js';
 import { downloadDocument } from '../storage/documentStore.js';
 
-export class GoogleDriveIntegration implements CoSealIntegration {
+export class GoogleDriveIntegration implements SendSignIntegration {
   readonly name = 'google';
   readonly displayName = 'Google Drive';
   readonly description = 'Automatically upload completed documents to Google Drive';

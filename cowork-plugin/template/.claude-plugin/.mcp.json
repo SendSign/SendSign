@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "sendsign": {
+      "url": "{{SENDSIGN_URL}}/mcp/sse",
+      "headers": {
+        "Authorization": "Bearer {{API_KEY}}"
+      }
+    }
+  }
+}

@@ -15,6 +15,7 @@ export interface BulkRecipient {
 
 export interface BulkOptions {
   templateId: string;
+  tenantId?: string;
   fieldMapping?: Record<string, string>;
   rateLimit?: number;
   notifyOnComplete?: string;
@@ -50,6 +51,9 @@ export async function processBulkSend(
   const envelopeIds: string[] = [];
   const errors: Array<{ row: number; error: string }> = [];
 
+  // Use tenantId from options or template
+  const tenantId = options?.tenantId || template.tenantId;
+
   // Get template document
   const templateDoc = await retrieveDocument(template.documentKey);
 
@@ -70,6 +74,7 @@ export async function processBulkSend(
       const [envelope] = await db
         .insert(envelopes)
         .values({
+          tenantId,
           organizationId: options?.organizationId || template.organizationId,
           subject: template.name,
           message: `Generated from template: ${template.name}`,
@@ -84,6 +89,7 @@ export async function processBulkSend(
       const [doc] = await db
         .insert(documents)
         .values({
+          tenantId,
           envelopeId: envelope.id,
           filename: `${template.name}.pdf`,
           contentType: 'application/pdf',
@@ -97,6 +103,7 @@ export async function processBulkSend(
       const [signer] = await db
         .insert(signers)
         .values({
+          tenantId,
           envelopeId: envelope.id,
           name: recipient.name,
           email: recipient.email,
@@ -111,6 +118,7 @@ export async function processBulkSend(
       if (Array.isArray(templateFields)) {
         for (const fieldConfig of templateFields) {
           await db.insert(fields).values({
+            tenantId,
             envelopeId: envelope.id,
             documentId: doc.id,
             signerId: signer.id,

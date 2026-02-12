@@ -1,21 +1,21 @@
-# CoSeal Production Deployment Guide
+# SendSign Production Deployment Guide
 
-This guide covers deploying CoSeal in production environments.
+This guide covers deploying SendSign in production environments.
 
 ## Quick Start (Docker)
 
-The fastest way to get CoSeal running:
+The fastest way to get SendSign running:
 
 ```bash
-git clone https://github.com/coseal/coseal.git
-cd coseal
+git clone https://github.com/sendsign/sendsign.git
+cd sendsign
 ./scripts/setup.sh
 ```
 
 This launches:
 - PostgreSQL database
 - MinIO (S3-compatible storage)
-- CoSeal API + Signing UI
+- SendSign API + Signing UI
 
 **Access:**
 - API: `http://localhost:3000`
@@ -45,21 +45,21 @@ Create a `.env` file (see `.env.example`):
 
 ```env
 # Database
-DATABASE_URL=postgresql://user:password@host:5432/coseal
+DATABASE_URL=postgresql://user:password@host:5432/sendsign
 
 # S3 Storage
 S3_ENDPOINT=https://s3.amazonaws.com
 S3_REGION=us-east-1
 S3_ACCESS_KEY_ID=your-key
 S3_SECRET_ACCESS_KEY=your-secret
-S3_BUCKET=coseal-documents
+S3_BUCKET=sendsign-documents
 
 # Encryption
 ENCRYPTION_KEY=<32-character-random-string>
 
 # API
 API_KEY=<random-api-key>
-BASE_URL=https://coseal.yourcompany.com
+BASE_URL=https://sendsign.yourcompany.com
 
 # Email (SendGrid)
 SENDGRID_API_KEY=your-sendgrid-key
@@ -93,7 +93,7 @@ openssl rand -hex 32  # For API_KEY
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: coseal
+  name: sendsign
 ```
 
 **Deployment:**
@@ -101,38 +101,38 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: coseal-api
-  namespace: coseal
+  name: sendsign-api
+  namespace: sendsign
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: coseal-api
+      app: sendsign-api
   template:
     metadata:
       labels:
-        app: coseal-api
+        app: sendsign-api
     spec:
       containers:
       - name: api
-        image: coseal/coseal:latest
+        image: sendsign/sendsign:latest
         ports:
         - containerPort: 3000
         env:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: coseal-secrets
+              name: sendsign-secrets
               key: database-url
         - name: ENCRYPTION_KEY
           valueFrom:
             secretKeyRef:
-              name: coseal-secrets
+              name: sendsign-secrets
               key: encryption-key
         - name: API_KEY
           valueFrom:
             secretKeyRef:
-              name: coseal-secrets
+              name: sendsign-secrets
               key: api-key
         livenessProbe:
           httpGet:
@@ -153,11 +153,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: coseal-api
-  namespace: coseal
+  name: sendsign-api
+  namespace: sendsign
 spec:
   selector:
-    app: coseal-api
+    app: sendsign-api
   ports:
   - port: 80
     targetPort: 3000
@@ -166,11 +166,11 @@ spec:
 
 **Secrets:**
 ```bash
-kubectl create secret generic coseal-secrets \
+kubectl create secret generic sendsign-secrets \
   --from-literal=database-url='postgresql://...' \
   --from-literal=encryption-key='...' \
   --from-literal=api-key='...' \
-  -n coseal
+  -n sendsign
 ```
 
 #### Helm Chart (Roadmap)
@@ -193,26 +193,26 @@ A Helm chart is planned for simplified Kubernetes deployments.
 **Example Terraform (simplified):**
 
 ```hcl
-resource "aws_ecs_cluster" "coseal" {
-  name = "coseal-cluster"
+resource "aws_ecs_cluster" "sendsign" {
+  name = "sendsign-cluster"
 }
 
-resource "aws_ecs_task_definition" "coseal_api" {
-  family                   = "coseal-api"
+resource "aws_ecs_task_definition" "sendsign_api" {
+  family                   = "sendsign-api"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
   memory                   = "1024"
 
   container_definitions = jsonencode([{
-    name  = "coseal-api"
-    image = "coseal/coseal:latest"
+    name  = "sendsign-api"
+    image = "sendsign/sendsign:latest"
     portMappings = [{
       containerPort = 3000
       protocol      = "tcp"
     }]
     environment = [
-      { name = "DATABASE_URL", value = aws_db_instance.coseal.endpoint },
+      { name = "DATABASE_URL", value = aws_db_instance.sendsign.endpoint },
       { name = "S3_BUCKET", value = aws_s3_bucket.documents.id }
     ]
   }])
@@ -241,28 +241,28 @@ resource "aws_ecs_task_definition" "coseal_api" {
 
 ## TLS/SSL Configuration
 
-CoSeal does not handle TLS termination directly. Use a reverse proxy or cloud load balancer.
+SendSign does not handle TLS termination directly. Use a reverse proxy or cloud load balancer.
 
 ### Using Nginx as Reverse Proxy
 
 **nginx.conf:**
 ```nginx
-upstream coseal {
+upstream sendsign {
   server localhost:3000;
 }
 
 server {
   listen 443 ssl http2;
-  server_name coseal.yourcompany.com;
+  server_name sendsign.yourcompany.com;
 
-  ssl_certificate /etc/ssl/certs/coseal.crt;
-  ssl_certificate_key /etc/ssl/private/coseal.key;
+  ssl_certificate /etc/ssl/certs/sendsign.crt;
+  ssl_certificate_key /etc/ssl/private/sendsign.key;
 
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_ciphers HIGH:!aNULL:!MD5;
 
   location / {
-    proxy_pass http://coseal;
+    proxy_pass http://sendsign;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -272,7 +272,7 @@ server {
 
 server {
   listen 80;
-  server_name coseal.yourcompany.com;
+  server_name sendsign.yourcompany.com;
   return 301 https://$server_name$request_uri;
 }
 ```
@@ -298,13 +298,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./letsencrypt:/letsencrypt
 
-  coseal-api:
-    image: coseal/coseal:latest
+  sendsign-api:
+    image: sendsign/sendsign:latest
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.coseal.rule=Host(`coseal.yourcompany.com`)"
-      - "traefik.http.routers.coseal.entrypoints=websecure"
-      - "traefik.http.routers.coseal.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.sendsign.rule=Host(`sendsign.yourcompany.com`)"
+      - "traefik.http.routers.sendsign.entrypoints=websecure"
+      - "traefik.http.routers.sendsign.tls.certresolver=letsencrypt"
 ```
 
 ---
@@ -321,18 +321,18 @@ services:
 #### AWS RDS
 ```bash
 aws rds create-db-instance \
-  --db-instance-identifier coseal-db \
+  --db-instance-identifier sendsign-db \
   --db-instance-class db.t3.medium \
   --engine postgres \
   --engine-version 16 \
-  --master-username coseal \
+  --master-username sendsign \
   --master-user-password <password> \
   --allocated-storage 20
 ```
 
 #### GCP Cloud SQL
 ```bash
-gcloud sql instances create coseal-db \
+gcloud sql instances create sendsign-db \
   --database-version=POSTGRES_16 \
   --tier=db-f1-micro \
   --region=us-central1
@@ -350,7 +350,7 @@ services:
     environment:
       DATABASES_HOST: db
       DATABASES_PORT: 5432
-      DATABASES_DBNAME: coseal
+      DATABASES_DBNAME: sendsign
       PGBOUNCER_POOL_MODE: transaction
       PGBOUNCER_MAX_CLIENT_CONN: 1000
       PGBOUNCER_DEFAULT_POOL_SIZE: 25
@@ -362,7 +362,7 @@ services:
 
 ### S3-Compatible Storage
 
-CoSeal supports any S3-compatible storage:
+SendSign supports any S3-compatible storage:
 - **AWS S3**
 - **Google Cloud Storage** (with S3 interoperability)
 - **Azure Blob Storage** (with S3 API)
@@ -377,7 +377,7 @@ S3_ENDPOINT=https://s3.amazonaws.com
 S3_REGION=us-east-1
 S3_ACCESS_KEY_ID=<key>
 S3_SECRET_ACCESS_KEY=<secret>
-S3_BUCKET=coseal-documents
+S3_BUCKET=sendsign-documents
 ```
 
 ### Document Retention
@@ -397,12 +397,12 @@ DOCUMENT_RETENTION_DAYS=2555  # 7 years (compliance requirement for many industr
 **Daily backups:**
 ```bash
 # Automated with cron
-0 2 * * * pg_dump $DATABASE_URL | gzip > /backups/coseal-$(date +\%Y\%m\%d).sql.gz
+0 2 * * * pg_dump $DATABASE_URL | gzip > /backups/sendsign-$(date +\%Y\%m\%d).sql.gz
 ```
 
 **Restore:**
 ```bash
-gunzip -c coseal-20260207.sql.gz | psql $DATABASE_URL
+gunzip -c sendsign-20260207.sql.gz | psql $DATABASE_URL
 ```
 
 ### Document Backups
@@ -411,7 +411,7 @@ S3 objects are automatically replicated if using AWS S3 with cross-region replic
 
 For self-hosted MinIO:
 ```bash
-mc mirror minio/coseal-documents s3/backup-bucket
+mc mirror minio/sendsign-documents s3/backup-bucket
 ```
 
 ---
@@ -429,9 +429,9 @@ curl -f http://localhost:3000/health || exit 1
 
 ### Logging
 
-CoSeal logs to stdout/stderr. Collect logs with:
-- **Docker:** `docker logs coseal-api`
-- **Kubernetes:** `kubectl logs -n coseal deployment/coseal-api`
+SendSign logs to stdout/stderr. Collect logs with:
+- **Docker:** `docker logs sendsign-api`
+- **Kubernetes:** `kubectl logs -n sendsign deployment/sendsign-api`
 - **Cloud providers:** CloudWatch (AWS), Cloud Logging (GCP), Azure Monitor
 
 ### Metrics (Roadmap)
@@ -444,16 +444,16 @@ Prometheus metrics endpoint planned for future releases.
 
 ### Horizontal Scaling
 
-CoSeal is stateless and can be horizontally scaled:
+SendSign is stateless and can be horizontally scaled:
 
 **Kubernetes:**
 ```bash
-kubectl scale deployment coseal-api --replicas=10 -n coseal
+kubectl scale deployment sendsign-api --replicas=10 -n sendsign
 ```
 
 **ECS:**
 ```bash
-aws ecs update-service --cluster coseal --service coseal-api --desired-count 10
+aws ecs update-service --cluster sendsign --service sendsign-api --desired-count 10
 ```
 
 ### Performance Tuning
@@ -472,7 +472,7 @@ aws ecs update-service --cluster coseal --service coseal-api --desired-count 10
 3. **Enable S3 encryption at rest** — Use AES-256 or KMS
 4. **Use managed secrets** — AWS Secrets Manager, GCP Secret Manager, Azure Key Vault
 5. **Restrict network access** — Use security groups, firewall rules
-6. **Enable audit logging** — CoSeal logs all actions; export audit events regularly
+6. **Enable audit logging** — SendSign logs all actions; export audit events regularly
 7. **Use strong database passwords** — At least 32 characters, randomly generated
 8. **Backup encryption keys** — Store `ENCRYPTION_KEY` securely; losing it means losing document access
 9. **Monitor for anomalies** — Set up alerts for unusual activity
@@ -505,7 +505,7 @@ For mission-critical deployments:
 
 **Recovery steps:**
 1. Restore database from latest backup
-2. Launch new CoSeal instances
+2. Launch new SendSign instances
 3. Verify document access from S3
 4. Run health checks
 5. Update DNS to point to new environment
@@ -524,7 +524,7 @@ For mission-critical deployments:
 | `S3_BUCKET`                 | Yes      | -                        | S3 bucket name                               |
 | `ENCRYPTION_KEY`            | Yes      | -                        | 32+ character encryption key                 |
 | `API_KEY`                   | Yes      | -                        | API authentication key                       |
-| `BASE_URL`                  | Yes      | `http://localhost:3000`  | Public URL of CoSeal service                 |
+| `BASE_URL`                  | Yes      | `http://localhost:3000`  | Public URL of SendSign service                 |
 | `PORT`                      | No       | `3000`                   | HTTP port                                    |
 | `NODE_ENV`                  | No       | `development`            | `development` or `production`                |
 | `SENDGRID_API_KEY`          | No       | -                        | SendGrid API key for emails                  |
@@ -546,7 +546,7 @@ For mission-critical deployments:
 - Database connectivity: `psql $DATABASE_URL`
 - S3 credentials: `aws s3 ls s3://<bucket>`
 - Environment variables: Ensure all required vars are set
-- Logs: `docker logs coseal-api`
+- Logs: `docker logs sendsign-api`
 
 ### Signers not receiving emails
 
@@ -574,7 +574,7 @@ For mission-critical deployments:
 
 ## SSO Configuration
 
-CoSeal supports enterprise Single Sign-On (SSO) via SAML 2.0 and OpenID Connect (OIDC).
+SendSign supports enterprise Single Sign-On (SSO) via SAML 2.0 and OpenID Connect (OIDC).
 
 ### Benefits
 
@@ -596,19 +596,19 @@ CoSeal supports enterprise Single Sign-On (SSO) via SAML 2.0 and OpenID Connect 
 
 ```env
 SSO_ENABLED=true
-SSO_SP_ENTITY_ID=https://coseal.yourcompany.com/sso
+SSO_SP_ENTITY_ID=https://sendsign.yourcompany.com/sso
 SSO_SP_CERT_PATH=/certs/sso-sp.pem
 SSO_SP_KEY_PATH=/certs/sso-sp-key.pem
 ```
 
 ### SAML Setup
 
-#### 1. Configure CoSeal as Service Provider (SP)
+#### 1. Configure SendSign as Service Provider (SP)
 
 Generate SP certificate and key:
 
 ```bash
-openssl req -x509 -newkey rsa:2048 -keyout sso-sp-key.pem -out sso-sp.pem -days 3650 -nodes -subj "/CN=CoSeal SP"
+openssl req -x509 -newkey rsa:2048 -keyout sso-sp-key.pem -out sso-sp.pem -days 3650 -nodes -subj "/CN=SendSign SP"
 ```
 
 #### 2. Get SP Metadata
@@ -623,24 +623,24 @@ curl -H "Authorization: Bearer <api-key>" \
 **For Okta:**
 1. Go to Applications → Create App Integration → SAML 2.0
 2. Upload SP metadata or enter manually:
-   - Single Sign-On URL: `https://coseal.yourcompany.com/api/sso/callback`
-   - Audience URI: `https://coseal.yourcompany.com/sso`
+   - Single Sign-On URL: `https://sendsign.yourcompany.com/api/sso/callback`
+   - Audience URI: `https://sendsign.yourcompany.com/sso`
 3. Download IdP metadata
 
 **For Azure AD:**
 1. Go to Enterprise Applications → New Application → Create your own
 2. Select "Integrate any other application you don't find in the gallery (Non-gallery)"
 3. Configure SAML:
-   - Identifier: `https://coseal.yourcompany.com/sso`
-   - Reply URL: `https://coseal.yourcompany.com/api/sso/callback`
+   - Identifier: `https://sendsign.yourcompany.com/sso`
+   - Reply URL: `https://sendsign.yourcompany.com/api/sso/callback`
 4. Download Federation Metadata XML
 
 **For Google Workspace:**
 1. Admin Console → Apps → Web and mobile apps → Add SAML app
-2. Enter CoSeal details and upload SP metadata
+2. Enter SendSign details and upload SP metadata
 3. Copy IdP entity ID and certificate
 
-#### 4. Register SSO Config in CoSeal
+#### 4. Register SSO Config in SendSign
 
 ```bash
 curl -X POST http://localhost:3000/api/sso/configurations \
@@ -651,8 +651,8 @@ curl -X POST http://localhost:3000/api/sso/configurations \
     "providerType": "saml",
     "config": {
       "entryPoint": "https://idp.example.com/sso/saml",
-      "issuer": "https://coseal.yourcompany.com/sso",
-      "callbackUrl": "https://coseal.yourcompany.com/api/sso/callback",
+      "issuer": "https://sendsign.yourcompany.com/sso",
+      "callbackUrl": "https://sendsign.yourcompany.com/api/sso/callback",
       "cert": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
       "allowedDomains": ["acme.com", "acme.co.uk"]
     },
@@ -667,12 +667,12 @@ curl -X POST http://localhost:3000/api/sso/configurations \
 **For Okta:**
 1. Applications → Create App Integration → OIDC
 2. Application type: Web Application
-3. Redirect URI: `https://coseal.yourcompany.com/api/sso/callback`
+3. Redirect URI: `https://sendsign.yourcompany.com/api/sso/callback`
 4. Copy Client ID and Client Secret
 
 **For Azure AD:**
 1. Azure AD → App registrations → New registration
-2. Redirect URI: `https://coseal.yourcompany.com/api/sso/callback`
+2. Redirect URI: `https://sendsign.yourcompany.com/api/sso/callback`
 3. Certificates & secrets → New client secret
 4. Copy Application (client) ID and secret
 5. Note the issuer URL: `https://login.microsoftonline.com/{tenant-id}/v2.0`
@@ -680,10 +680,10 @@ curl -X POST http://localhost:3000/api/sso/configurations \
 **For Google Workspace:**
 1. Google Cloud Console → APIs & Services → Credentials
 2. Create OAuth 2.0 Client ID
-3. Authorized redirect URI: `https://coseal.yourcompany.com/api/sso/callback`
+3. Authorized redirect URI: `https://sendsign.yourcompany.com/api/sso/callback`
 4. Copy Client ID and Client Secret
 
-#### 2. Register in CoSeal
+#### 2. Register in SendSign
 
 ```bash
 curl -X POST http://localhost:3000/api/sso/configurations \
@@ -696,7 +696,7 @@ curl -X POST http://localhost:3000/api/sso/configurations \
       "issuerUrl": "https://accounts.google.com",
       "clientId": "your-client-id",
       "clientSecret": "your-client-secret",
-      "callbackUrl": "https://coseal.yourcompany.com/api/sso/callback",
+      "callbackUrl": "https://sendsign.yourcompany.com/api/sso/callback",
       "allowedDomains": ["acme.com"]
     },
     "enabled": true
@@ -714,13 +714,13 @@ curl -X POST http://localhost:3000/api/sso/configurations \
 
 2. Create a realm and SAML client in Keycloak UI
 
-3. Configure CoSeal to use Keycloak as IdP
+3. Configure SendSign to use Keycloak as IdP
 
 4. Test SSO flow:
    - Access signing link
    - Click "Sign in with your organization"
    - Redirected to Keycloak login
-   - After login, redirected back to CoSeal signing ceremony
+   - After login, redirected back to SendSign signing ceremony
 
 **Testing with samltest.id:**
 
@@ -761,15 +761,15 @@ For SAML-only testing without setting up your own IdP:
 ### Quick Start
 
 ```bash
-# Install CoSeal via Helm
-helm install coseal ./deploy/helm/coseal/ \
-  --namespace coseal \
+# Install SendSign via Helm
+helm install sendsign ./deploy/helm/sendsign/ \
+  --namespace sendsign \
   --create-namespace \
   --set config.baseUrl="https://sign.example.com" \
-  --set database.url="postgresql://user:pass@db-host:5432/coseal" \
+  --set database.url="postgresql://user:pass@db-host:5432/sendsign" \
   --set encryption.key="your-32-char-encryption-key-here" \
   --set auth.apiKey="your-api-key" \
-  --set storage.bucket="coseal-documents" \
+  --set storage.bucket="sendsign-documents" \
   --set storage.region="us-east-1"
 ```
 
@@ -781,7 +781,7 @@ Create a `values-production.yaml`:
 replicaCount: 3
 
 image:
-  repository: ghcr.io/coseal/coseal
+  repository: ghcr.io/sendsign/sendsign
   tag: "1.0.0"
 
 config:
@@ -805,7 +805,7 @@ ingress:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: coseal-tls
+    - secretName: sendsign-tls
       hosts:
         - sign.yourcompany.com
 
@@ -825,8 +825,8 @@ resources:
 Then install:
 
 ```bash
-helm install coseal ./deploy/helm/coseal/ \
-  --namespace coseal \
+helm install sendsign ./deploy/helm/sendsign/ \
+  --namespace sendsign \
   --create-namespace \
   -f values-production.yaml
 ```
@@ -834,19 +834,19 @@ helm install coseal ./deploy/helm/coseal/ \
 ### Verify Deployment
 
 ```bash
-kubectl get pods -n coseal
-kubectl get svc -n coseal
-kubectl get ingress -n coseal
+kubectl get pods -n sendsign
+kubectl get svc -n sendsign
+kubectl get ingress -n sendsign
 
 # Check logs
-kubectl logs -n coseal deployment/coseal --tail=100
+kubectl logs -n sendsign deployment/sendsign --tail=100
 ```
 
 ### Upgrade
 
 ```bash
-helm upgrade coseal ./deploy/helm/coseal/ \
-  --namespace coseal \
+helm upgrade sendsign ./deploy/helm/sendsign/ \
+  --namespace sendsign \
   -f values-production.yaml
 ```
 
@@ -886,14 +886,14 @@ helm install external-secrets external-secrets/external-secrets \
 Create `terraform.tfvars`:
 
 ```hcl
-project_name    = "coseal"
+project_name    = "sendsign"
 environment     = "production"
 aws_region      = "us-east-1"
 domain_name     = "sign.example.com"
 certificate_arn = "arn:aws:acm:..."
 
 db_instance_class = "db.t3.large"
-db_username       = "coseal"
+db_username       = "sendsign"
 db_password       = "<secure-password>"
 
 eks_cluster_version    = "1.29"
@@ -914,14 +914,14 @@ terraform apply
 **3. Configure kubectl:**
 
 ```bash
-aws eks update-kubeconfig --region us-east-1 --name coseal-production
+aws eks update-kubeconfig --region us-east-1 --name sendsign-production
 ```
 
-**4. Install CoSeal with Helm:**
+**4. Install SendSign with Helm:**
 
 ```bash
-helm install coseal ../../helm/coseal/ \
-  --namespace coseal \
+helm install sendsign ../../helm/sendsign/ \
+  --namespace sendsign \
   --create-namespace \
   --set config.baseUrl="https://sign.example.com" \
   --set database.url="<from terraform output>" \
@@ -931,7 +931,7 @@ helm install coseal ../../helm/coseal/ \
 **5. Verify:**
 
 ```bash
-kubectl get all -n coseal
+kubectl get all -n sendsign
 ```
 
 ### GCP Deployment
@@ -947,7 +947,7 @@ Create `terraform.tfvars`:
 
 ```hcl
 project_id   = "your-gcp-project"
-project_name = "coseal"
+project_name = "sendsign"
 environment  = "production"
 region       = "us-central1"
 domain_name  = "sign.example.com"
@@ -972,16 +972,16 @@ terraform apply
 **3. Configure kubectl:**
 
 ```bash
-gcloud container clusters get-credentials coseal-production \
+gcloud container clusters get-credentials sendsign-production \
   --region us-central1 \
   --project your-gcp-project
 ```
 
-**4. Install CoSeal with Helm:**
+**4. Install SendSign with Helm:**
 
 ```bash
-helm install coseal ../../helm/coseal/ \
-  --namespace coseal \
+helm install sendsign ../../helm/sendsign/ \
+  --namespace sendsign \
   --create-namespace \
   --set config.baseUrl="https://sign.example.com" \
   --set database.url="<from terraform output>" \
@@ -1007,6 +1007,6 @@ Use these values in your Helm `values.yaml`.
 
 ## Support
 
-- **Documentation:** [https://github.com/coseal/coseal](https://github.com/coseal/coseal)
-- **Issues:** [https://github.com/coseal/coseal/issues](https://github.com/coseal/coseal/issues)
+- **Documentation:** [https://github.com/sendsign/sendsign](https://github.com/sendsign/sendsign)
+- **Issues:** [https://github.com/sendsign/sendsign/issues](https://github.com/sendsign/sendsign/issues)
 - **Enterprise support:** Contact info (TBD)

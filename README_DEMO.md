@@ -1,6 +1,6 @@
-# CoSeal Demo / Quick Start
+# SendSign Demo / Quick Start
 
-Get CoSeal up and running in 5 minutes to see the signing UI in action.
+Get SendSign up and running in 5 minutes to see the signing UI in action.
 
 ## Prerequisites
 
@@ -13,8 +13,8 @@ Get CoSeal up and running in 5 minutes to see the signing UI in action.
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/ianquackenbos/CoSeal.git
-cd CoSeal
+git clone https://github.com/ianquackenbos/SendSign.git
+cd SendSign
 npm install
 ```
 
@@ -24,7 +24,7 @@ Create a `.env` file in the project root:
 
 ```bash
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/coseal
+DATABASE_URL=postgresql://user:password@localhost:5432/sendsign
 
 # Server
 PORT=3000
@@ -193,11 +193,11 @@ The built files should be in `signing-ui/dist/`.
 
 - Read `ARCHITECTURE.md` for technical details
 - Check `docs/API.md` for full API reference
-- See `BUILD_RECIPE.md` for development guide
+- See `CONTRIBUTING.md` for development guide
 - Deploy to production with `docs/DEPLOYMENT.md`
 
 ## Support
 
-- **Issues**: https://github.com/ianquackenbos/CoSeal/issues
-- **Docs**: https://github.com/ianquackenbos/CoSeal
+- **Issues**: https://github.com/ianquackenbos/SendSign/issues
+- **Docs**: https://github.com/ianquackenbos/SendSign
 - **License**: BSD-3-Clause

@@ -6,11 +6,20 @@ import { getEnvelope } from '../../workflow/envelopeManager.js';
 import { canSignerSign } from '../../workflow/signingOrder.js';
 import { getDb } from '../../db/connection.js';
 import { envelopes, signers, fields, documents, comments } from '../../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { logEvent } from '../../audit/auditLogger.js';
 import { downloadDocument } from '../../storage/documentStore.js';
 
 const router = Router();
+
+/**
+ * Helper: Set RLS context for signing ceremony routes.
+ * Uses the tenantId from the validated signing token.
+ */
+async function setSigningTenantContext(tenantId: string): Promise<void> {
+  const db = getDb();
+  await db.execute(sql.raw(`SET LOCAL app.tenant_id = '${tenantId}'`));
+}
 
 const signFieldSchema = z.object({
   fields: z.array(
@@ -32,6 +41,9 @@ router.get('/:token', async (req, res) => {
     res.status(401).json({ success: false, error: tokenResult.reason });
     return;
   }
+
+  // Set RLS context for tenant isolation
+  await setSigningTenantContext(tokenResult.signer!.tenantId);
 
   const envelope = await getEnvelope(tokenResult.signer!.envelopeId);
   if (!envelope) {
@@ -105,6 +117,8 @@ router.get('/:token/document', async (req, res) => {
     return;
   }
 
+  await setSigningTenantContext(tokenResult.signer!.tenantId);
+
   try {
     const db = getDb();
     const envelopeId = tokenResult.signer!.envelopeId;
@@ -176,6 +190,8 @@ router.post('/:token', validate(signFieldSchema), async (req, res) => {
     res.status(401).json({ success: false, error: tokenResult.reason });
     return;
   }
+
+  await setSigningTenantContext(tokenResult.signer!.tenantId);
 
   const db = getDb();
   const signerId = tokenResult.signer!.id;
@@ -263,6 +279,8 @@ router.post('/:token/decline', async (req, res) => {
     return;
   }
 
+  await setSigningTenantContext(tokenResult.signer!.tenantId);
+
   const db = getDb();
   const signerId = tokenResult.signer!.id;
   const envelopeId = tokenResult.signer!.envelopeId;
@@ -324,6 +342,8 @@ router.post('/:token/consent', async (req, res) => {
     res.status(401).json({ success: false, error: tokenResult.reason });
     return;
   }
+
+  await setSigningTenantContext(tokenResult.signer!.tenantId);
 
   const db = getDb();
   const signerId = tokenResult.signer!.id;
@@ -399,6 +419,7 @@ router.post('/:token/delegate', async (req, res) => {
   const [newSigner] = await db
     .insert(signers)
     .values({
+      tenantId: tokenResult.signer!.tenantId,
       envelopeId: originalSigner.envelopeId,
       name: delegateName,
       email: delegateEmail,
@@ -495,6 +516,7 @@ router.post('/:token/comments', async (req, res) => {
   const [comment] = await db
     .insert(comments)
     .values({
+      tenantId: tokenResult.signer!.tenantId,
       envelopeId: signer.envelopeId,
       signerId: signer.id,
       documentId: documentId || null,
@@ -695,6 +717,7 @@ router.post('/:token/comments/:commentId/reply', async (req, res) => {
   const [reply] = await db
     .insert(comments)
     .values({
+      tenantId: tokenResult.signer!.tenantId,
       envelopeId: signer.envelopeId,
       signerId: signer.id,
       documentId: parentComment.documentId,
@@ -732,6 +755,8 @@ router.get('/:token/signed-document', async (req, res) => {
     res.status(401).json({ success: false, error: tokenResult.reason });
     return;
   }
+
+  await setSigningTenantContext(tokenResult.signer!.tenantId);
 
   const db = getDb();
   const envelopeId = tokenResult.signer!.envelopeId;
@@ -785,6 +810,8 @@ router.get('/:token/certificate', async (req, res) => {
     res.status(401).json({ success: false, error: tokenResult.reason });
     return;
   }
+
+  await setSigningTenantContext(tokenResult.signer!.tenantId);
 
   const db = getDb();
   const envelopeId = tokenResult.signer!.envelopeId;

@@ -67,6 +67,7 @@ router.post('/', validate(createOrgSchema), async (req, res) => {
   const [org] = await db
     .insert(organizations)
     .values({
+      tenantId: req.tenant!.id,
       name,
       slug,
       plan: plan ?? 'free',
@@ -264,7 +265,7 @@ router.post('/:id/api-keys', validate(createApiKeySchema), async (req, res) => {
   }
 
   // Generate a secure API key
-  const rawKey = `coseal_${crypto.randomBytes(32).toString('hex')}`;
+  const rawKey = `sendsign_${crypto.randomBytes(32).toString('hex')}`;
   const keyHash = hashApiKey(rawKey);
 
   const expiresAt = req.body.expiresInDays
@@ -274,6 +275,7 @@ router.post('/:id/api-keys', validate(createApiKeySchema), async (req, res) => {
   const [apiKey] = await db
     .insert(apiKeys)
     .values({
+      tenantId: req.tenant!.id,
       organizationId: orgId,
       keyHash,
       name: req.body.name ?? null,

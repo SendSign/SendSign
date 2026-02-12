@@ -1,7 +1,7 @@
-# CoSeal Development Context
+# SendSign Development Context
 
 ## What This Is
-CoSeal is an open-source e-signature engine + Claude Cowork plugin. It's the missing piece that completes the contract lifecycle started by Anthropic's Legal plugin. Review → Redline → Sign → Seal — all without leaving Claude.
+SendSign is an open-source e-signature engine + Claude Cowork plugin. It's the missing piece that completes the contract lifecycle started by Anthropic's Legal plugin. Review → Redline → Sign → Seal — all without leaving Claude.
 
 ## Key Documents
 - `README.md` — Project positioning, feature overview, comparison to DocuSign, roadmap
@@ -23,14 +23,14 @@ CoSeal is an open-source e-signature engine + Claude Cowork plugin. It's the mis
 - **Validation:** zod
 - **Testing:** vitest
 - **Deployment:** Docker + docker-compose, Helm (K8s), Terraform (AWS/GCP)
-- **SDK:** tsup (dual CJS/ESM build), published as @coseal/sdk
+- **SDK:** tsup (dual CJS/ESM build), published as @sendsign/sdk
 - **ORM Migrations:** Drizzle Kit
 
 ## Key Principles
 1. **Every action creates an immutable audit event** — no exceptions
 2. **Documents are encrypted at rest** with AES-256-GCM
 3. **Signing tokens are single-use and time-limited** (default 72hr)
-4. **Sealed PDFs must be independently verifiable** without CoSeal running
+4. **Sealed PDFs must be independently verifiable** without SendSign running
 5. **The service works standalone** — Cowork plugin is one interface, REST API is another
 6. **No vendor lock-in** — S3-compatible storage, standard SMTP fallback, self-hosted by default
 
@@ -72,4 +72,4 @@ Follow BUILD_RECIPE.md from Step 1 through Step 23. Update this line as you comp
 - ✅ Step 17: QES — Swisscom AIS + Namirial TSP adapters, full mock flow, compliance docs
 - ✅ Step 18: Enterprise SSO — SAML 2.0 + OIDC, multi-tenant config, IdP integration, SSO = AES-level verification
 - ✅ Step 19: Retention policy engine — Industry presets (HIPAA, SEC, IRS, GDPR), auto-delete/flagged review, cron job, compliance docs
-- ✅ Step 20: Mobile-responsive signing + @coseal/sdk — PWA, touch-optimized, bottom-sheet nav, embeddable SDK with tsup build
+- ✅ Step 20: Mobile-responsive signing + @sendsign/sdk — PWA, touch-optimized, bottom-sheet nav, embeddable SDK with tsup build

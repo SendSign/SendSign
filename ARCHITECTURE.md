@@ -1,12 +1,12 @@
-# CoSeal Architecture
+# SendSign Architecture
 
-> Technical specification for the CoSeal e-signature engine and Cowork plugin.
+> Technical specification for the SendSign e-signature engine and Cowork plugin.
 
 ---
 
 ## System Overview
 
-CoSeal is two things:
+SendSign is two things:
 
 1. **A Cowork plugin** — markdown and JSON files that add signing commands to Claude's workflow, designed to work alongside the Legal plugin.
 2. **A signing microservice** — a Node.js service that handles document preparation, the signing ceremony, cryptographic sealing, audit logging, and storage.
@@ -18,18 +18,18 @@ The plugin sends instructions to the service via MCP (Model Context Protocol). T
 ## Plugin Structure
 
 ```
-coseal-plugin/
+sendsign-plugin/
 ├── .claude-plugin/
 │   └── plugin.json              # Plugin manifest
 ├── .mcp.json                    # MCP connector to signing service
 ├── README.md
 ├── commands/
-│   ├── send-for-signature.md    # /coseal:send
-│   ├── check-status.md          # /coseal:status
-│   ├── send-reminder.md         # /coseal:remind
-│   ├── void-envelope.md         # /coseal:void
-│   ├── download-signed.md       # /coseal:download
-│   └── manage-templates.md      # /coseal:templates
+│   ├── send-for-signature.md    # /sendsign:send
+│   ├── check-status.md          # /sendsign:status
+│   ├── send-reminder.md         # /sendsign:remind
+│   ├── void-envelope.md         # /sendsign:void
+│   ├── download-signed.md       # /sendsign:download
+│   └── manage-templates.md      # /sendsign:templates
 └── skills/
     ├── signing-workflow/
     │   └── SKILL.md             # End-to-end signing orchestration
@@ -45,11 +45,11 @@ coseal-plugin/
 
 ```json
 {
-  "name": "coseal",
+  "name": "sendsign",
   "version": "0.1.0",
-  "displayName": "CoSeal — Open Source E-Signatures",
+  "displayName": "SendSign — Open Source E-Signatures",
   "description": "Send documents for legally binding electronic signatures directly from Claude. Reviews to redlines to signatures — all in one workflow.",
-  "author": "CoSeal Contributors",
+  "author": "SendSign Contributors",
   "license": "Apache-2.0",
   "commands": [
     "commands/send-for-signature.md",
@@ -66,7 +66,7 @@ coseal-plugin/
     "skills/audit-compliance/SKILL.md"
   ],
   "dependencies": {
-    "connectors": ["coseal-service"]
+    "connectors": ["sendsign-service"]
   }
 }
 ```
@@ -76,13 +76,13 @@ coseal-plugin/
 ```json
 {
   "mcpServers": {
-    "coseal-service": {
+    "sendsign-service": {
       "type": "http",
-      "url": "${COSEAL_SERVICE_URL:-http://localhost:3000}",
-      "description": "CoSeal signing service — handles document prep, signing ceremony, crypto sealing, and audit trail",
+      "url": "${SENDSIGN_SERVICE_URL:-http://localhost:3000}",
+      "description": "SendSign signing service — handles document prep, signing ceremony, crypto sealing, and audit trail",
       "auth": {
         "type": "bearer",
-        "token": "${COSEAL_API_KEY}"
+        "token": "${SENDSIGN_API_KEY}"
       }
     }
   }
@@ -94,7 +94,7 @@ coseal-plugin/
 ## Signing Service Architecture
 
 ```
-coseal-service/
+sendsign-service/
 ├── src/
 │   ├── index.ts                 # Express app entry point
 │   ├── config/
@@ -349,7 +349,7 @@ Webhook events: `envelope.sent`, `envelope.opened`, `envelope.signed`, `envelope
 ## Signing Ceremony Flow
 
 ```
-1. Sender creates envelope via API (or Claude /coseal:send)
+1. Sender creates envelope via API (or Claude /sendsign:send)
    → Document uploaded and stored (encrypted)
    → Signers defined with email, name, order
    → Fields placed on document pages
@@ -399,13 +399,13 @@ Webhook events: `envelope.sent`, `envelope.opened`, `envelope.signed`, `envelope
 
 ## Cryptographic Sealing
 
-When all parties have signed, CoSeal produces a tamper-evident sealed document:
+When all parties have signed, SendSign produces a tamper-evident sealed document:
 
 1. **Flatten** — all signature images, initials, dates, and text fields are permanently embedded into the PDF.
 
 2. **Hash** — the complete PDF byte stream is hashed with SHA-256, producing a unique fingerprint.
 
-3. **Sign** — the hash is signed with the CoSeal instance's private key (RSA-2048 or ECDSA P-256), producing a digital signature.
+3. **Sign** — the hash is signed with the SendSign instance's private key (RSA-2048 or ECDSA P-256), producing a digital signature.
 
 4. **Embed** — the digital signature and X.509 certificate are embedded into the PDF's signature dictionary, following the PDF 2.0 / PAdES standard.
 
@@ -416,7 +416,7 @@ When all parties have signed, CoSeal produces a tamper-evident sealed document:
    - Full audit trail of all events
    - QR code linking to online verification
 
-Anyone can verify the document's integrity by checking the embedded signature against the certificate, without needing CoSeal.
+Anyone can verify the document's integrity by checking the embedded signature against the certificate, without needing SendSign.
 
 ---
 
@@ -451,13 +451,13 @@ Anyone can verify the document's integrity by checking the embedded signature ag
 
 ```bash
 # Required
-DATABASE_URL=postgresql://user:pass@host:5432/coseal
-COSEAL_SIGNING_KEY_PATH=/path/to/private-key.pem
-COSEAL_SIGNING_CERT_PATH=/path/to/certificate.pem
+DATABASE_URL=postgresql://user:pass@host:5432/sendsign
+SENDSIGN_SIGNING_KEY_PATH=/path/to/private-key.pem
+SENDSIGN_SIGNING_CERT_PATH=/path/to/certificate.pem
 
 # Storage (S3-compatible)
 S3_ENDPOINT=https://s3.amazonaws.com     # or MinIO, Backblaze, etc.
-S3_BUCKET=coseal-documents
+S3_BUCKET=sendsign-documents
 S3_ACCESS_KEY=your-access-key
 S3_SECRET_KEY=your-secret-key
 S3_REGION=us-east-1
@@ -474,8 +474,8 @@ TWILIO_AUTH_TOKEN=xxxxx
 TWILIO_PHONE_NUMBER=+1234567890
 
 # Service
-COSEAL_BASE_URL=https://sign.yourdomain.com
-COSEAL_API_KEY=your-api-key              # for MCP/API auth
+SENDSIGN_BASE_URL=https://sign.yourdomain.com
+SENDSIGN_API_KEY=your-api-key              # for MCP/API auth
 PORT=3000
 
 # Optional
@@ -491,8 +491,8 @@ LOG_LEVEL=info
 
 ### Development
 ```bash
-git clone https://github.com/coseal-sign/coseal-service.git
-cd coseal-service
+git clone https://github.com/sendsign-sign/sendsign-service.git
+cd sendsign-service
 cp .env.example .env
 docker-compose up
 # Service: http://localhost:3000
@@ -504,7 +504,7 @@ docker-compose up
 - Use S3 or equivalent for document storage
 - Use AWS KMS / GCP KMS for encryption key management
 - Put behind a reverse proxy (nginx, Caddy) with TLS
-- Set `COSEAL_BASE_URL` to your public domain
+- Set `SENDSIGN_BASE_URL` to your public domain
 
 ### Production (Kubernetes)
 - Helm chart provided in `/deploy/helm/`
@@ -516,10 +516,10 @@ docker-compose up
 
 ## Integration with Cowork Legal Plugin
 
-CoSeal is designed as a natural extension of the Legal plugin workflow:
+SendSign is designed as a natural extension of the Legal plugin workflow:
 
 ```
-Legal Plugin                          CoSeal Plugin
+Legal Plugin                          SendSign Plugin
 ────────────                          ─────────────
 /review-contract                      
   → Clause-by-clause review           
@@ -529,24 +529,24 @@ Legal Plugin                          CoSeal Plugin
 /triage-nda                           
   → Standard / Counsel / Full review  
                                       
-User approves final document ────────▶ /coseal:send
+User approves final document ────────▶ /sendsign:send
                                         → Upload document
                                         → Define signers
                                         → Place fields
                                         → Send for signature
                                       
-                                      /coseal:status
+                                      /sendsign:status
                                         → Track signing progress
                                       
-                                      /coseal:remind
+                                      /sendsign:remind
                                         → Nudge unsigned parties
                                       
-                                      /coseal:download
+                                      /sendsign:download
                                         → Get sealed PDF + cert
                                         → File to workspace
 ```
 
-The Legal plugin's skills teach Claude about contract structure. CoSeal's skills teach Claude about the signing process. Together, they give Claude the full context to manage a contract from first review to final execution.
+The Legal plugin's skills teach Claude about contract structure. SendSign's skills teach Claude about the signing process. Together, they give Claude the full context to manage a contract from first review to final execution.
 
 ---
 

@@ -3,15 +3,15 @@
  * Handles registration, initialization, and lifecycle of all integrations.
  */
 
-import type { CoSealIntegration, IntegrationConfig } from './types.js';
+import type { SendSignIntegration, IntegrationConfig } from './types.js';
 import type { Envelope } from '../db/schema.js';
 
 /**
  * Central registry for all available integrations.
  */
 class IntegrationRegistry {
-  private integrations = new Map<string, CoSealIntegration>();
-  private instances = new Map<string, CoSealIntegration>();
+  private integrations = new Map<string, SendSignIntegration>();
+  private instances = new Map<string, SendSignIntegration>();
 
   constructor() {
     // Register all available integrations (lazy-loaded)
@@ -38,7 +38,7 @@ class IntegrationRegistry {
   /**
    * Register an integration.
    */
-  register(integration: CoSealIntegration): void {
+  register(integration: SendSignIntegration): void {
     this.integrations.set(integration.name, integration);
   }
 
@@ -67,7 +67,7 @@ class IntegrationRegistry {
   /**
    * Get an integration by name.
    */
-  async get(name: string): Promise<CoSealIntegration | undefined> {
+  async get(name: string): Promise<SendSignIntegration | undefined> {
     // Ensure all integrations are loaded
     if (this.integrations.size === 0) {
       await this.registerAll();
@@ -79,7 +79,7 @@ class IntegrationRegistry {
   /**
    * Get an initialized (enabled) integration instance.
    */
-  getInstance(name: string): CoSealIntegration | undefined {
+  getInstance(name: string): SendSignIntegration | undefined {
     return this.instances.get(name);
   }
 
@@ -98,7 +98,7 @@ class IntegrationRegistry {
     }
 
     // Create a new instance for this configuration
-    const IntegrationClass = integration.constructor as new () => CoSealIntegration;
+    const IntegrationClass = integration.constructor as new () => SendSignIntegration;
     const instance = new IntegrationClass();
 
     await instance.initialize(config);
@@ -137,7 +137,7 @@ class IntegrationRegistry {
   /**
    * Get all enabled integration instances.
    */
-  getAllEnabled(): CoSealIntegration[] {
+  getAllEnabled(): SendSignIntegration[] {
     return Array.from(this.instances.values());
   }
 

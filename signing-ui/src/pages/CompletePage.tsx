@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { CheckCircle, Clock, Lock, Mail, Download } from 'lucide-react';
-import { CoSealBranding } from '../components/CoSealBranding';
+import { SendSignBranding } from '../components/SendSignBranding';
 
 export function CompletePage() {
   const [searchParams] = useSearchParams();
@@ -110,7 +110,7 @@ export function CompletePage() {
           </p>
         </div>
       </div>
-      <CoSealBranding />
+      <SendSignBranding />
     </div>
   );
 }

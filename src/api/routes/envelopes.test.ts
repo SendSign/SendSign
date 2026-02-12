@@ -5,14 +5,14 @@ import { getDb } from '../../db/connection.js';
 import { envelopes, signers, documents, auditEvents, fields } from '../../db/schema.js';
 import { sql } from 'drizzle-orm';
 
-const API_KEY = process.env.API_KEY ?? process.env.COSEAL_API_KEY ?? 'test-api-key';
+const API_KEY = process.env.API_KEY ?? process.env.SENDSIGN_API_KEY ?? 'test-api-key';
 
 describe('Envelope API (integration)', () => {
   const db = getDb();
 
   beforeAll(() => {
     // Ensure API_KEY is set for tests
-    if (!process.env.API_KEY && !process.env.COSEAL_API_KEY) {
+    if (!process.env.API_KEY && !process.env.SENDSIGN_API_KEY) {
       process.env.API_KEY = API_KEY;
     }
   });

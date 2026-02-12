@@ -7,7 +7,7 @@ let testPdfBuffer: Buffer;
 async function createTestPdf(pageCount: number = 2): Promise<Buffer> {
   const doc = await PDFDocument.create();
   doc.setTitle('Test Document');
-  doc.setAuthor('CoSeal Test');
+  doc.setAuthor('SendSign Test');
   const font = await doc.embedFont(StandardFonts.Helvetica);
 
   for (let i = 0; i < pageCount; i++) {
@@ -44,7 +44,7 @@ describe('getPdfMetadata', () => {
   it('extracts metadata', async () => {
     const meta = await getPdfMetadata(testPdfBuffer);
     expect(meta.title).toBe('Test Document');
-    expect(meta.author).toBe('CoSeal Test');
+    expect(meta.author).toBe('SendSign Test');
     expect(meta.pageCount).toBe('3');
   });
 });

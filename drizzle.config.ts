@@ -8,7 +8,7 @@ export default defineConfig({
   out: './src/db/migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL || 'postgresql://coseal:password@localhost:5432/coseal',
+    url: process.env.DATABASE_URL || 'postgresql://sendsign:password@localhost:5432/sendsign',
   },
   verbose: true,
   strict: true,

@@ -1,22 +1,22 @@
-# CoSeal Field Mapping Configuration
+# SendSign Field Mapping Configuration
 
 ## Overview
 
-The `CoSeal_Field_Mapping__mdt` custom metadata type maps Salesforce object fields to CoSeal merge fields. This allows automatic population of document templates with data from Salesforce records.
+The `SendSign_Field_Mapping__mdt` custom metadata type maps Salesforce object fields to SendSign merge fields. This allows automatic population of document templates with data from Salesforce records.
 
-## Custom Metadata Type: `CoSeal_Field_Mapping__mdt`
+## Custom Metadata Type: `SendSign_Field_Mapping__mdt`
 
 ### Fields
 
 | Field API Name | Type | Description |
 |---|---|---|
 | `Salesforce_Field__c` | Text(255) | API name of the Salesforce field (e.g., `Account.Name`) |
-| `CoSeal_Merge_Field__c` | Text(255) | Corresponding CoSeal merge field name (e.g., `client_name`) |
-| `Template_Id__c` | Text(36) | CoSeal template UUID this mapping applies to. Use `All` for all templates. |
+| `SendSign_Merge_Field__c` | Text(255) | Corresponding SendSign merge field name (e.g., `client_name`) |
+| `Template_Id__c` | Text(36) | SendSign template UUID this mapping applies to. Use `All` for all templates. |
 
 ## Example Mappings
 
-| Salesforce Field | CoSeal Merge Field | Template |
+| Salesforce Field | SendSign Merge Field | Template |
 |---|---|---|
 | `Account.Name` | `client_name` | All |
 | `Opportunity.Amount` | `contract_amount` | SOW Template |
@@ -29,9 +29,9 @@ The `CoSeal_Field_Mapping__mdt` custom metadata type maps Salesforce object fiel
 
 ## How to Configure
 
-1. Go to **Setup** → **Custom Metadata Types** → **CoSeal Field Mapping** → **Manage Records**
+1. Go to **Setup** → **Custom Metadata Types** → **SendSign Field Mapping** → **Manage Records**
 2. Click **New** to create a mapping
-3. Enter the Salesforce field API name, CoSeal merge field name, and template ID
+3. Enter the Salesforce field API name, SendSign merge field name, and template ID
 4. Save
 
 ## Notes

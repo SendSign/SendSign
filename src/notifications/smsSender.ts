@@ -32,7 +32,7 @@ export async function sendSmsOtp(phone: string, code: string): Promise<void> {
   }
 
   await twilioClient.messages.create({
-    body: `Your CoSeal verification code is: ${code}. This code expires in 10 minutes.`,
+    body: `Your SendSign verification code is: ${code}. This code expires in 10 minutes.`,
     from,
     to: phone,
   });

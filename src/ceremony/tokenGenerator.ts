@@ -26,6 +26,7 @@ export interface TokenValidationResult {
   signer?: {
     id: string;
     envelopeId: string;
+    tenantId: string;
     name: string;
     email: string;
     status: string;
@@ -74,6 +75,7 @@ function mapSigner(signer: typeof signers.$inferSelect) {
   return {
     id: signer.id,
     envelopeId: signer.envelopeId,
+    tenantId: signer.tenantId,
     name: signer.name,
     email: signer.email,
     status: signer.status,

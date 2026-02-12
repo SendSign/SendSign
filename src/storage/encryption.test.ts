@@ -4,7 +4,7 @@ import { encrypt, decrypt, deriveKey, pack, unpack } from './encryption.js';
 
 describe('encryption', () => {
   const key = crypto.randomBytes(32);
-  const plaintext = Buffer.from('Hello, CoSeal! This is a test document.');
+  const plaintext = Buffer.from('Hello, SendSign! This is a test document.');
 
   it('encrypt → decrypt round-trip produces original data', async () => {
     const result = await encrypt(plaintext, key);

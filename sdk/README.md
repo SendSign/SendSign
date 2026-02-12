@@ -1,28 +1,28 @@
-# @coseal/sdk
+# @sendsign/sdk
 
-> Official SDK for CoSeal — the open-source e-signature engine.
+> Official SDK for SendSign — the open-source e-signature engine.
 
 Send documents for legally binding electronic signatures from any Node.js or browser application.
 
 ## Installation
 
 ```bash
-npm install @coseal/sdk
+npm install @sendsign/sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { CoSealClient } from '@coseal/sdk';
+import { SendSignClient } from '@sendsign/sdk';
 import fs from 'fs';
 
-const coseal = new CoSealClient({
+const sendsign = new SendSignClient({
   baseUrl: 'https://sign.yourcompany.com',
   apiKey: 'your-api-key',
 });
 
 // Create and send an envelope
-const envelope = await coseal.createEnvelope({
+const envelope = await sendsign.createEnvelope({
   document: fs.readFileSync('contract.pdf'),
   subject: 'Please sign the MSA',
   signers: [
@@ -37,7 +37,7 @@ const envelope = await coseal.createEnvelope({
   ],
 });
 
-await coseal.sendEnvelope(envelope.id);
+await sendsign.sendEnvelope(envelope.id);
 console.log(`Envelope sent: ${envelope.id}`);
 ```
 
@@ -46,8 +46,8 @@ console.log(`Envelope sent: ${envelope.id}`);
 ### Constructor
 
 ```typescript
-const coseal = new CoSealClient({
-  baseUrl: string,      // Required: CoSeal server URL
+const sendsign = new SendSignClient({
+  baseUrl: string,      // Required: SendSign server URL
   apiKey: string,       // Required: API key
   timeout?: number,     // Optional: Request timeout in ms (default: 30000)
   fetch?: typeof fetch, // Optional: Custom fetch implementation
@@ -58,30 +58,30 @@ const coseal = new CoSealClient({
 
 ```typescript
 // Create an envelope
-const envelope = await coseal.createEnvelope({ ... });
+const envelope = await sendsign.createEnvelope({ ... });
 
 // Send for signing
-await coseal.sendEnvelope(envelope.id);
+await sendsign.sendEnvelope(envelope.id);
 
 // Get envelope details
-const details = await coseal.getEnvelope(envelope.id);
+const details = await sendsign.getEnvelope(envelope.id);
 
 // List envelopes with filters
-const list = await coseal.listEnvelopes({
+const list = await sendsign.listEnvelopes({
   status: 'sent',
   page: 1,
   limit: 20,
 });
 
 // Void (cancel) an envelope
-await coseal.voidEnvelope(envelope.id, 'Incorrect terms');
+await sendsign.voidEnvelope(envelope.id, 'Incorrect terms');
 ```
 
 ### Signing
 
 ```typescript
 // Get a signing URL for a specific signer
-const url = await coseal.getSigningUrl(envelopeId, signerId);
+const url = await sendsign.getSigningUrl(envelopeId, signerId);
 // Returns: "https://sign.yourcompany.com/sign/abc123..."
 ```
 
@@ -89,11 +89,11 @@ const url = await coseal.getSigningUrl(envelopeId, signerId);
 
 ```typescript
 // Download sealed (signed) PDF
-const sealedPdf = await coseal.downloadSealed(envelopeId);
+const sealedPdf = await sendsign.downloadSealed(envelopeId);
 fs.writeFileSync('signed-contract.pdf', sealedPdf);
 
 // Download completion certificate
-const cert = await coseal.downloadCertificate(envelopeId);
+const cert = await sendsign.downloadCertificate(envelopeId);
 fs.writeFileSync('certificate.pdf', cert);
 ```
 
@@ -101,7 +101,7 @@ fs.writeFileSync('certificate.pdf', cert);
 
 ```typescript
 // Create a reusable template
-const template = await coseal.createTemplate({
+const template = await sendsign.createTemplate({
   name: 'Standard NDA',
   document: fs.readFileSync('nda-template.pdf'),
   roles: [
@@ -111,7 +111,7 @@ const template = await coseal.createTemplate({
 });
 
 // Use template to create envelope
-const envelope = await coseal.useTemplate(template.id, [
+const envelope = await sendsign.useTemplate(template.id, [
   { name: 'Alice', email: 'alice@company.com', order: 1 },
   { name: 'Bob', email: 'bob@vendor.com', order: 2 },
 ]);
@@ -121,33 +121,33 @@ const envelope = await coseal.useTemplate(template.id, [
 
 ```typescript
 // Get audit trail as JSON
-const auditJson = await coseal.getAuditTrail(envelopeId, 'json');
+const auditJson = await sendsign.getAuditTrail(envelopeId, 'json');
 
 // Get audit trail as CSV
-const auditCsv = await coseal.getAuditTrail(envelopeId, 'csv');
+const auditCsv = await sendsign.getAuditTrail(envelopeId, 'csv');
 ```
 
 ### Retention Policies
 
 ```typescript
 // Assign a retention policy to an envelope
-await coseal.assignRetentionPolicy(envelopeId, policyId);
+await sendsign.assignRetentionPolicy(envelopeId, policyId);
 ```
 
 ### Webhooks
 
 ```typescript
 // Register a webhook
-const webhook = await coseal.registerWebhook(
-  'https://yourapp.com/webhooks/coseal',
+const webhook = await sendsign.registerWebhook(
+  'https://yourapp.com/webhooks/sendsign',
   ['envelope.completed', 'signer.completed'],
 );
 
 // List webhooks
-const webhooks = await coseal.listWebhooks();
+const webhooks = await sendsign.listWebhooks();
 
 // Delete a webhook
-await coseal.deleteWebhook(webhook.id);
+await sendsign.deleteWebhook(webhook.id);
 ```
 
 ### Embedded Signing (Browser)
@@ -155,7 +155,7 @@ await coseal.deleteWebhook(webhook.id);
 Embed the signing experience directly in your web application:
 
 ```typescript
-const { destroy } = coseal.embedSigning({
+const { destroy } = sendsign.embedSigning({
   containerId: 'signing-container',
   token: signerToken,
   onReady: () => console.log('Signing UI loaded'),
@@ -185,7 +185,7 @@ The SDK throws specific error types for different failure scenarios:
 
 ```typescript
 import {
-  CoSealError,
+  SendSignError,
   AuthenticationError,
   NotFoundError,
   ValidationError,
@@ -193,10 +193,10 @@ import {
   ServerError,
   TimeoutError,
   NetworkError,
-} from '@coseal/sdk';
+} from '@sendsign/sdk';
 
 try {
-  await coseal.getEnvelope('nonexistent-id');
+  await sendsign.getEnvelope('nonexistent-id');
 } catch (error) {
   if (error instanceof NotFoundError) {
     console.log('Envelope not found');
@@ -231,7 +231,7 @@ import type {
   WebhookEvent,
   AuditEvent,
   EmbedOptions,
-} from '@coseal/sdk';
+} from '@sendsign/sdk';
 ```
 
 ## Browser Support

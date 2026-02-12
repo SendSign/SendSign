@@ -36,14 +36,14 @@ describe('sealDocument', () => {
     expect(sealed.length).toBeGreaterThan(testPdfBuffer.length);
   });
 
-  it('sealed PDF contains CoSeal metadata', async () => {
+  it('sealed PDF contains SendSign metadata', async () => {
     const sealed = await sealDocument(testPdfBuffer, privateKey, certificate);
     const pdfDoc = await PDFDocument.load(sealed);
 
     const subject = pdfDoc.getSubject();
     expect(subject).toBeTruthy();
     const sealInfo = JSON.parse(subject!);
-    expect(sealInfo.coseal_version).toBe('0.1.0');
+    expect(sealInfo.sendsign_version).toBe('0.1.0');
     expect(sealInfo.hash_algorithm).toBe('SHA-256');
     expect(sealInfo.document_hash).toBeTruthy();
   });
@@ -57,7 +57,7 @@ describe('verifySealedDocument', () => {
     expect(result.valid).toBe(true);
     expect(result.documentHash).toBe(hashDocument(testPdfBuffer));
     expect(result.sealedAt).toBeTruthy();
-    expect(result.certificateSubject).toContain('CoSeal');
+    expect(result.certificateSubject).toContain('SendSign');
   });
 
   it('returns invalid for unsigned PDF', async () => {

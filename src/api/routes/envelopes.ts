@@ -19,9 +19,11 @@ import { documents, envelopes as envelopesTable, signers as signersTable, fields
 import { v4 as uuidv4 } from 'uuid';
 import { enforceEnvelopeLimit, enforceVerificationLevel } from '../middleware/planEnforcement.js';
 import { getOrganizationId } from '../middleware/auth.js';
+import { getTenantId } from '../middleware/tenantContext.js';
 import { requireRole, requireOwnership } from '../middleware/rbac.js';
-import { eq, and, or, inArray } from 'drizzle-orm';
+import { eq, and, or, inArray, gte as gteOp } from 'drizzle-orm';
 import { logEvent } from '../../audit/auditLogger.js';
+import { getAuditRetentionDays } from '../../control/services/featureGates.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -123,6 +125,7 @@ router.post('/', upload.array('documents', 10), parseMultipartJsonFields('signer
 
   // Create envelope (scoped to organization if multi-tenant)
   const envelope = await createEnvelope({
+    tenantId: req.tenant!.id,
     subject: req.body.subject,
     message: req.body.message,
     signingOrder: req.body.signingOrder,
@@ -167,6 +170,7 @@ router.post('/', upload.array('documents', 10), parseMultipartJsonFields('signer
 
       // Save document record in the documents table
       await db.insert(documents).values({
+        tenantId: req.tenant!.id,
         id: docId,
         envelopeId: envelope.id,
         filename: conversion.filename,
@@ -237,6 +241,7 @@ router.post('/', upload.array('documents', 10), parseMultipartJsonFields('signer
             fallbackSignerId;
 
           await db.insert(fieldsTable).values({
+            tenantId: req.tenant!.id,
             id: uuidv4(),
             envelopeId: envelope.id,
             documentId: firstDoc?.id ?? envelope.id, // best-effort if no document yet
@@ -493,6 +498,7 @@ router.post('/:id/signers', requireRole('admin', 'sender'), validate(addSignerSc
     const [newSigner] = await db
       .insert(signersTable)
       .values({
+        tenantId: req.tenant!.id,
         envelopeId,
         name: req.body.name,
         email: req.body.email,
@@ -841,6 +847,7 @@ router.post('/:id/auto-place-fields', requireRole('admin', 'sender'), async (req
 
       for (const field of autoFields) {
         await db.insert(fieldsTable).values({
+          tenantId: req.tenant!.id,
           envelopeId,
           documentId: doc.id,
           signerId: field.signerId,
@@ -925,6 +932,9 @@ router.patch('/:id', requireRole('admin', 'sender'), validate(patchEnvelopeSchem
 /**
  * GET /api/envelopes/:id/audit
  * Get the full audit trail for an envelope.
+ * 
+ * Note: All plans can VIEW audit logs. White-label gets unlimited retention,
+ * free/managed get 30-day retention enforced by the audit logger itself.
  */
 router.get('/:id/audit', requireRole('admin', 'sender'), async (req, res) => {
   const db = getDb();
@@ -934,10 +944,23 @@ router.get('/:id/audit', requireRole('admin', 'sender'), async (req, res) => {
     const [envelope] = await db.select().from(envelopesTable).where(eq(envelopesTable.id, envelopeId)).limit(1);
     if (!envelope) { res.status(404).json({ success: false, error: 'Envelope not found' }); return; }
 
+    // Get retention period based on tenant plan
+    const retentionDays = getAuditRetentionDays(req.tenant?.plan || 'free');
+    
+    // Build query with retention filter for non-whitelabel tenants
+    const conditions = [eq(auditEventsTable.envelopeId, envelopeId)];
+    
+    if (retentionDays !== -1) {
+      // Enforce 30-day retention for free/managed plans
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+      conditions.push(gteOp(auditEventsTable.createdAt, cutoffDate));
+    }
+
     const events = await db
       .select()
       .from(auditEventsTable)
-      .where(eq(auditEventsTable.envelopeId, envelopeId))
+      .where(and(...conditions))
       .orderBy(auditEventsTable.createdAt);
 
     // Enrich with signer names
@@ -1029,6 +1052,7 @@ router.post('/:id/fields', requireRole('admin', 'sender'), validate(bulkFieldSch
     const [inserted] = await db
       .insert(fieldsTable)
       .values({
+        tenantId: req.tenant!.id,
         id: uuidv4(),
         envelopeId,
         documentId,
@@ -1280,6 +1304,7 @@ router.post('/folders', async (req, res) => {
   const [folder] = await db
     .insert(folders)
     .values({
+      tenantId: req.tenant!.id,
       name,
       parentId: parentId || null,
       createdBy,
@@ -1393,6 +1418,7 @@ router.post('/folders/:id/envelopes', async (req, res) => {
 
   // Add envelopes to folder (ignore duplicates)
   const values = envelopeIds.map((envelopeId) => ({
+    tenantId: req.tenant!.id,
     envelopeId,
     folderId,
   }));
@@ -1545,6 +1571,7 @@ router.post('/generate', requireRole('admin', 'sender'), async (req, res) => {
     const [envelope] = await db
       .insert(envelopesTable)
       .values({
+        tenantId: req.tenant!.id,
         organizationId,
         subject: template.name,
         message: `Generated from template: ${template.name}`,
@@ -1558,6 +1585,7 @@ router.post('/generate', requireRole('admin', 'sender'), async (req, res) => {
     const [doc] = await db
       .insert(documents)
       .values({
+        tenantId: req.tenant!.id,
         envelopeId: envelope.id,
         filename: `${template.name}.pdf`,
         contentType: 'application/pdf',
@@ -1572,6 +1600,7 @@ router.post('/generate', requireRole('admin', 'sender'), async (req, res) => {
       const [signer] = await db
         .insert(signersTable)
         .values({
+          tenantId: req.tenant!.id,
           envelopeId: envelope.id,
           name: signerData.name,
           email: signerData.email,
@@ -1586,6 +1615,7 @@ router.post('/generate', requireRole('admin', 'sender'), async (req, res) => {
       if (Array.isArray(templateFields)) {
         for (const fieldConfig of templateFields) {
           await db.insert(fieldsTable).values({
+            tenantId: req.tenant!.id,
             envelopeId: envelope.id,
             documentId: doc.id,
             signerId: signer.id,

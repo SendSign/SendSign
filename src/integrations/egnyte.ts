@@ -1,14 +1,14 @@
 /**
- * Egnyte integration for CoSeal.
+ * Egnyte integration for SendSign.
  * Auto-uploads completed sealed documents to Egnyte.
  */
 
 import FormData from 'form-data';
-import type { CoSealIntegration } from './types.js';
+import type { SendSignIntegration } from './types.js';
 import type { Envelope } from '../db/schema.js';
 import { downloadDocument } from '../storage/documentStore.js';
 
-export class EgnyteIntegration implements CoSealIntegration {
+export class EgnyteIntegration implements SendSignIntegration {
   readonly name = 'egnyte';
   readonly displayName = 'Egnyte';
   readonly description = 'Automatically upload completed documents to Egnyte';

@@ -74,10 +74,10 @@ export function DashboardPage() {
       const params = new URLSearchParams(window.location.search);
       const fromUrl = params.get('apiKey');
       if (fromUrl) {
-        sessionStorage.setItem('coseal_api_key', fromUrl);
+        sessionStorage.setItem('sendsign_api_key', fromUrl);
         authToken.current = fromUrl;
       } else {
-        authToken.current = sessionStorage.getItem('coseal_api_key') || '';
+        authToken.current = sessionStorage.getItem('sendsign_api_key') || '';
       }
     }
   }
@@ -124,7 +124,7 @@ export function DashboardPage() {
         // Clear stale tokens and redirect to login
         localStorage.removeItem('sendsign_token');
         localStorage.removeItem('sendsign_user');
-        sessionStorage.removeItem('coseal_api_key');
+        sessionStorage.removeItem('sendsign_api_key');
         navigate('/login');
         return;
       }
@@ -447,7 +447,7 @@ export function DashboardPage() {
                   onClick={() => {
                     localStorage.removeItem('sendsign_token');
                     localStorage.removeItem('sendsign_user');
-                    sessionStorage.removeItem('coseal_api_key');
+                    sessionStorage.removeItem('sendsign_api_key');
                     navigate('/login');
                   }}
                   className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"

@@ -7,7 +7,7 @@ import { uploadDocument, downloadDocument, deleteDocument, getSignedUrl } from '
  *   S3_ENDPOINT=http://localhost:9000
  *   S3_ACCESS_KEY=minioadmin
  *   S3_SECRET_KEY=minioadmin
- *   S3_BUCKET=coseal-documents
+ *   S3_BUCKET=sendsign-documents
  *   ENCRYPTION_KEY=test-encryption-key-for-dev-only
  */
 
@@ -16,7 +16,7 @@ describe('documentStore (integration)', () => {
     process.env.S3_ENDPOINT = 'http://localhost:9000';
     process.env.S3_ACCESS_KEY = 'minioadmin';
     process.env.S3_SECRET_KEY = 'minioadmin';
-    process.env.S3_BUCKET = 'coseal-documents';
+    process.env.S3_BUCKET = 'sendsign-documents';
     process.env.S3_REGION = 'us-east-1';
     process.env.ENCRYPTION_KEY = 'test-encryption-key-for-dev-only';
   });

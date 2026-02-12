@@ -8,6 +8,20 @@
       "when": 1770517613252,
       "tag": "0000_daffy_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770652800000,
+      "tag": "0001_add_multi_tenancy",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770739200000,
+      "tag": "0002_add_rls_policies",
+      "breakpoints": true
     }
   ]
 }
