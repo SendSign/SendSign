@@ -337,11 +337,12 @@ nav .container {
 }
 .cowork-chat {
   padding: 18px 16px;
-  min-height: 210px;
+  height: 220px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1;
+  flex: none;
 }
 .cowork-msg {
   display: flex;
@@ -1042,25 +1043,120 @@ footer {
 }
 @media (max-width: 1024px) {
   .hero-terminal { display: none; }
+  .hero-inner { justify-content: center; }
+  .hero-content { max-width: 640px; }
   .comparison-table-wrap { overflow-x: auto; }
   .comparison-table { min-width: 700px; }
+  .security-grid { grid-template-columns: 1fr; gap: 32px; }
 }
 @media (max-width: 768px) {
-  .section { padding: 80px 0; }
+  .section { padding: 64px 0; }
   .container { padding: 0 20px; }
-  .nav-links { display: none; }
+
+  /* Nav */
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: rgba(26, 26, 24, 0.97);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    padding: 20px 24px;
+    gap: 0;
+  }
+  .nav-links.active { display: flex; }
+  .nav-links a {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 16px;
+    width: 100%;
+  }
+  .nav-links a:last-child { border-bottom: none; }
+  .nav-cta {
+    margin-top: 8px;
+    text-align: center;
+    display: block;
+    padding: 12px 20px !important;
+  }
   .mobile-menu-btn { display: block; }
+  nav { padding: 12px 0; }
+
+  /* Hero */
+  .hero { min-height: auto; padding: 120px 0 80px; }
+  .hero h1 { font-size: clamp(32px, 10vw, 52px); }
+  .hero-description { font-size: 16px; line-height: 1.7; }
+  .hero-ctas { flex-direction: column; }
+  .hero-ctas a { text-align: center; width: 100%; justify-content: center; }
+  .hero-badge { font-size: 10px; }
+
+  /* Sections */
+  .section-title { font-size: clamp(26px, 6vw, 36px); }
+  .section-subtitle { font-size: 15px; }
+
+  /* Grids */
   .steps-grid,
   .features-grid,
-  .pricing-grid { grid-template-columns: 1fr; }
-  .capabilities-grid { grid-template-columns: 1fr; }
-  .commands-grid { grid-template-columns: 1fr; }
+  .pricing-grid,
+  .capabilities-grid,
+  .commands-grid,
   .security-grid { grid-template-columns: 1fr; }
-  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
-  .oss-content { flex-direction: column; text-align: center; }
-  .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
-  .hero-ctas { flex-direction: column; }
-  .hero-ctas a { text-align: center; }
+  .steps-grid { gap: 1px; margin-top: 40px; }
+  .features-grid { gap: 1px; margin-top: 40px; }
+
+  /* Pricing */
+  .pricing-grid { gap: 16px; margin-top: 40px; }
+  .pricing-card { padding: 28px 24px; }
+  .pricing-card .price { font-size: 36px; }
+
+  /* Comparison table */
+  .comparison-table-wrap { margin-top: 40px; border-radius: 12px; }
+  .comparison-table th,
+  .comparison-table td { padding: 10px 12px; font-size: 12px; }
+
+  /* Commands */
+  .commands-grid { gap: 12px; margin-top: 40px; }
+  .command-group h3 { font-size: 14px; }
+
+  /* Capabilities */
+  .capabilities-grid { gap: 12px; margin-top: 40px; }
+
+  /* How it works */
+  .step-number { font-size: 48px; }
+
+  /* OSS */
+  .oss-content { flex-direction: column; text-align: center; gap: 24px; }
+  .oss-code { font-size: 12px; padding: 16px 20px; overflow-x: auto; }
+  .oss-text .btn-secondary { margin: 0 auto; }
+
+  /* Footer */
+  .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+  .footer-brand { text-align: center; }
+  .footer-brand p { max-width: 100%; }
+  .footer-col { text-align: center; }
+  .footer-col h4 { margin-bottom: 8px; }
+  .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+
+  /* Contact */
+  #contact .container { padding: 0 20px; }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 16px; }
+  .section { padding: 52px 0; }
+  .hero { padding: 100px 0 60px; }
+  .hero h1 { font-size: 32px; line-height: 1.1; }
+  .hero-description { font-size: 15px; }
+  .section-title { font-size: 24px; }
+  .section-subtitle { font-size: 14px; }
+  .btn-primary, .btn-secondary { font-size: 14px; padding: 12px 24px; }
+  .pricing-card .price { font-size: 30px; }
+  .step-card { padding: 28px 20px; }
+  .feature-card { padding: 28px 20px; }
+  .compliance-badge { padding: 14px 16px; gap: 12px; }
+  .compliance-badge .badge-icon { width: 36px; height: 36px; font-size: 16px; }
+  .nav-logo svg { height: 26px; }
 }
 </style>
 </head>
@@ -1871,6 +1967,12 @@ document.getElementById('coming-soon-modal').addEventListener('click', (e) => {
 // Mobile menu
 document.querySelector('.mobile-menu-btn')?.addEventListener('click', () => {
   document.querySelector('.nav-links').classList.toggle('active');
+});
+// Close mobile menu when a link is tapped
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelector('.nav-links').classList.remove('active');
+  });
 });
 
 // ── COWORK UI ANIMATION ──
