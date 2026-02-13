@@ -45,9 +45,9 @@ router.get(
       // Generate JWT session token
       const token = generateSessionToken({
         userId: result.user.id,
-        tenantId: result.tenant.id,
         email: result.user.email,
         role: result.user.role,
+        organizationId: result.user.organizationId,
       });
 
       // Set session cookie
@@ -97,9 +97,9 @@ router.get(
       // Generate JWT session token
       const token = generateSessionToken({
         userId: result.user.id,
-        tenantId: result.tenant.id,
         email: result.user.email,
         role: result.user.role,
+        organizationId: result.user.organizationId,
       });
 
       // Set session cookie

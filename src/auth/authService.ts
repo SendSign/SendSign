@@ -92,6 +92,25 @@ export function verifyJwt(token: string): JwtPayload | null {
   }
 }
 
+/**
+ * Generate a session token for OAuth flows.
+ * This is a convenience wrapper around signJwt for OAuth callback handlers.
+ */
+export function generateSessionToken(payload: {
+  userId: string;
+  email: string;
+  role: string;
+  organizationId?: string | null;
+}): string {
+  const jwtPayload: JwtPayload = {
+    userId: payload.userId,
+    email: payload.email,
+    role: payload.role,
+    organizationId: payload.organizationId || null,
+  };
+  return signJwt(jwtPayload);
+}
+
 // ─── Register ────────────────────────────────────────────────────────
 
 export async function registerUser(

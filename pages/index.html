@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SendSign — E-Signatures for the AI Era</title>
+<meta name="description" content="The first e-signature platform built for AI agents. Send documents for signing from Cowork, any MCP client, or the API. Self-host free or start free on our managed platform.">
+<meta property="og:title" content="SendSign — E-Signatures for the AI Era">
+<meta property="og:description" content="The first e-signature platform built for AI agents. Self-host or start free on our managed platform.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://sendsign.dev">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,500;1,600&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg-deep: #1a1a18;
+  --bg-primary: #262624;
+  --bg-elevated: #30302E;
+  --bg-surface: #3a3a37;
+  --accent: #DE7356;
+  --accent-light: #e89479;
+  --accent-glow: rgba(222, 115, 86, 0.15);
+  --accent-glow-strong: rgba(222, 115, 86, 0.3);
+  --text-primary: #f0ede8;
+  --text-secondary: #a8a49c;
+  --text-tertiary: #6e6b64;
+  --border: #3a3a37;
+  --border-light: #4a4a46;
+  --green: #6ECF8E;
+  --green-dim: rgba(110, 207, 142, 0.15);
+  --red: #CF6E6E;
+  --red-dim: rgba(207, 110, 110, 0.1);
+  --yellow: #CFB86E;
+  --blue: #6E9ECF;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── UTILITY ── */
+.container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+.section { padding: 120px 0; }
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+  display: block;
+}
+.section-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 600;
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+.section-subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+  max-width: 600px;
+  line-height: 1.7;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 16px 0;
+  transition: background 0.3s, backdrop-filter 0.3s;
+}
+nav.scrolled {
+  background: rgba(26, 26, 24, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-logo svg { height: 32px; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text-primary); }
+.nav-cta {
+  background: var(--accent) !important;
+  color: var(--bg-deep) !important;
+  font-weight: 600 !important;
+  padding: 8px 20px;
+  border-radius: 8px;
+  transition: opacity 0.2s !important;
+}
+.nav-cta:hover { opacity: 0.9; }
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+}
+.mobile-menu-btn span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text-primary);
+  margin: 5px 0;
+  transition: 0.3s;
+}
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  padding-top: 80px;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.hero-inner {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  width: 100%;
+}
+.hero-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+.hero-terminal {
+  flex: 0 0 520px;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  animation: fadeInUp 0.6s ease-out;
+}
+.hero-badge .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-dot 2s infinite;
+}
+.hero h1 {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(44px, 7vw, 80px);
+  font-weight: 600;
+  line-height: 1.05;
+  margin-bottom: 24px;
+  animation: fadeInUp 0.6s ease-out 0.1s both;
+}
+.hero h1 .accent {
+  color: var(--accent);
+  font-style: italic;
+}
+.hero-description {
+  font-size: 20px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  max-width: 580px;
+  margin-bottom: 40px;
+  animation: fadeInUp 0.6s ease-out 0.2s both;
+}
+.hero-ctas {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: var(--accent);
+  color: var(--bg-deep);
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px var(--accent-glow-strong);
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.btn-secondary:hover {
+  border-color: var(--text-tertiary);
+  background: var(--bg-elevated);
+}
+.cowork-window {
+  background: #1e1e1c;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 80px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.cowork-layout {
+  display: flex;
+}
+.cowork-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cowork-sidebar {
+  width: 170px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.015);
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 10px;
+}
+.cowork-titlebar {
+  display: flex;
+  align-items: center;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 8px;
+}
+.cowork-dots { display: flex; gap: 6px; }
+.cowork-dot { width: 10px; height: 10px; border-radius: 50%; }
+.cowork-dot.r { background: #ff5f57; }
+.cowork-dot.y { background: #ffbd2e; }
+.cowork-dot.g { background: #28c840; }
+.cowork-tabs {
+  display: flex;
+  gap: 0;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 12.5px;
+  font-family: 'DM Sans', sans-serif;
+}
+.cowork-tab {
+  padding: 4px 14px;
+  color: var(--text-tertiary);
+  cursor: default;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.cowork-tab.active {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.08);
+  font-weight: 500;
+}
+.cowork-task {
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cowork-chat {
+  padding: 18px 16px;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+.cowork-msg {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.cowork-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+.cowork-avatar.user { background: rgba(180,140,110,0.2); color: #c9a07a; }
+.cowork-avatar.claude {
+  background: linear-gradient(145deg, #c8704e, #d99570);
+  color: white;
+  box-shadow: 0 2px 8px rgba(200,112,78,0.3);
+}
+.cowork-bubble {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  padding-top: 3px;
+}
+.cowork-bubble .meta-label { color: var(--text-tertiary); font-size: 12px; }
+.cowork-bubble .meta-value { color: var(--green); font-size: 12px; }
+.cowork-input-bar {
+  padding: 10px 12px 10px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.015);
+}
+.cowork-plus-btn {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cowork-input-placeholder {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: 'DM Sans', sans-serif;
+  flex: 1;
+}
+.cowork-input-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.cowork-model-badge {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.cowork-send-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(222,115,86,0.3);
+}
+
+/* sidebar panels */
+.sidebar-panel {
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  overflow: hidden;
+}
+.sidebar-panel-header {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: default;
+}
+.sidebar-panel-header svg { color: var(--text-tertiary); }
+.sidebar-task-item {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.sidebar-task-item .task-link { color: var(--text-tertiary); display: flex; }
+.sidebar-context-items {
+  padding: 8px 10px;
+  display: flex;
+  gap: 6px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.context-doc {
+  width: 36px; height: 44px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.context-doc svg { opacity: 0.3; }
+.context-doc.add {
+  border-style: dashed;
+  border-color: rgba(255,255,255,0.12);
+}
+.sidebar-context-caption {
+  padding: 0 10px 8px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── TYPING ANIMATION ── */
+.cursor-blink {
+  color: var(--accent);
+  animation: blink 0.8s infinite;
+  font-weight: 300;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cowork-msg.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.4s ease forwards;
+}
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* ── HOW IT WORKS ── */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin-top: 60px;
+  background: var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.step-card {
+  background: var(--bg-primary);
+  padding: 40px 32px;
+  position: relative;
+}
+.step-number {
+  font-family: 'Poppins', sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  color: var(--bg-elevated);
+  line-height: 1;
+  margin-bottom: 20px;
+}
+.step-card h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.step-card p {
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.step-tag {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.step-tag.time { background: var(--accent-glow); color: var(--accent); }
+
+/* ── COWORK CAPABILITIES ── */
+.capabilities-section { background: var(--bg-primary); }
+.capabilities-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 60px;
+}
+.capability-card {
+  padding: 32px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-deep);
+  transition: border-color 0.3s, transform 0.2s;
+}
+.capability-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.capability-card.featured {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--bg-deep), rgba(222, 115, 86, 0.05));
+}
+.capability-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+.capability-icon.orange { background: var(--accent-glow); color: var(--accent); }
+.capability-icon.green { background: var(--green-dim); color: var(--green); }
+.capability-icon.blue { background: rgba(110, 158, 207, 0.15); color: var(--blue); }
+.capability-icon.yellow { background: rgba(207, 184, 110, 0.15); color: var(--yellow); }
+.capability-card h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.capability-card p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.capability-example {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-left: 2px solid var(--accent);
+}
+
+/* ── FEATURES ── */
+
+/* ── COMMANDS REFERENCE ── */
+.commands-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 60px;
+}
+.command-group {
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+}
+.command-group-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.command-group-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.command-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.command-item:last-child { border-bottom: none; }
+.command-item code {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+.command-desc {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.coming-soon-cmd { opacity: 0.5; }
+.cmd-badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.cmd-badge.soon {
+  background: rgba(207, 184, 110, 0.15);
+  color: var(--yellow);
+}
+
+/* ── FEATURES ── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 60px;
+}
+.feature-card {
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+}
+.feature-card h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.feature-card h3 .icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: var(--accent-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.feature-card p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── SECURITY ── */
+.security-section { background: var(--bg-primary); }
+.security-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+  margin-top: 60px;
+  align-items: start;
+}
+.security-list { display: flex; flex-direction: column; gap: 20px; }
+.security-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.security-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--green-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--green);
+  font-size: 16px;
+}
+.security-item h4 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.security-item p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.security-badge-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.compliance-badge {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-deep);
+}
+.compliance-badge .badge-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.compliance-badge h4 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+}
+.compliance-badge p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── COMPARISON TABLE ── */
+.comparison-table-wrap {
+  margin-top: 60px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.comparison-table thead th {
+  padding: 20px 24px;
+  text-align: left;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+.comparison-table thead th:first-child { width: 30%; }
+.comparison-table thead th.highlight {
+  color: var(--accent);
+  position: relative;
+}
+.comparison-table thead th.highlight::before {
+  content: 'RECOMMENDED';
+  position: absolute;
+  top: -1px;
+  left: 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  padding: 2px 8px;
+  background: var(--accent);
+  color: var(--bg-deep);
+  border-radius: 0 0 6px 6px;
+}
+.comparison-table tbody td {
+  padding: 14px 24px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+.comparison-table tbody tr:last-child td { border-bottom: none; }
+.comparison-table tbody td:first-child {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.comparison-table tbody td.highlight-col {
+  background: rgba(222, 115, 86, 0.03);
+}
+.check { color: var(--green); font-weight: 600; }
+.cross { color: var(--text-tertiary); }
+.partial { color: var(--yellow); }
+.cowork-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: rgba(110, 158, 207, 0.12);
+  color: var(--blue);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── PRICING ── */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin-top: 60px;
+  background: var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.pricing-card {
+  background: var(--bg-primary);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+}
+.pricing-card.featured {
+  background: var(--bg-deep);
+  position: relative;
+}
+.pricing-card.featured::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+.pricing-tier {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+.pricing-price {
+  font-family: 'Poppins', sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.pricing-price .unit {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+.pricing-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+.pricing-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+  flex-grow: 1;
+}
+.pricing-features li {
+  font-size: 14px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+.pricing-features li::before {
+  content: '✓';
+  color: var(--green);
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.pricing-btn {
+  display: block;
+  text-align: center;
+  padding: 14px;
+  border-radius: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.pricing-btn.primary {
+  background: var(--accent);
+  color: var(--bg-deep);
+}
+.pricing-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px var(--accent-glow-strong);
+}
+.pricing-btn.secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+.pricing-btn.secondary:hover { border-color: var(--text-tertiary); }
+
+/* ── OPEN SOURCE BANNER ── */
+.oss-section {
+  background: linear-gradient(135deg, var(--bg-primary), rgba(222, 115, 86, 0.05));
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.oss-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+.oss-text { max-width: 600px; }
+.oss-code {
+  flex-shrink: 0;
+  padding: 24px 32px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.oss-code .prompt { color: var(--accent); }
+.oss-code .cmd { color: var(--text-primary); }
+
+/* ── FOOTER ── */
+footer {
+  padding: 60px 0 40px;
+  border-top: 1px solid var(--border);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+.footer-brand p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 16px;
+  max-width: 280px;
+}
+.footer-col h4 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+.footer-col a {
+  display: block;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--accent); }
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1280px) {
+  .cowork-sidebar { display: none; }
+  .hero-terminal { flex: 0 0 400px; }
+}
+@media (max-width: 1024px) {
+  .hero-terminal { display: none; }
+  .comparison-table-wrap { overflow-x: auto; }
+  .comparison-table { min-width: 700px; }
+}
+@media (max-width: 768px) {
+  .section { padding: 80px 0; }
+  .container { padding: 0 20px; }
+  .nav-links { display: none; }
+  .mobile-menu-btn { display: block; }
+  .steps-grid,
+  .features-grid,
+  .pricing-grid { grid-template-columns: 1fr; }
+  .capabilities-grid { grid-template-columns: 1fr; }
+  .commands-grid { grid-template-columns: 1fr; }
+  .security-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .oss-content { flex-direction: column; text-align: center; }
+  .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+  .hero-ctas { flex-direction: column; }
+  .hero-ctas a { text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="container">
+    <a href="/" class="nav-logo" style="display:flex;align-items:center;gap:4px;text-decoration:none;">
+      <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="10" width="30" height="40" rx="3" stroke="#FFFFFF" stroke-width="2" opacity="0.5"/><path d="M32 10V18H40" stroke="#FFFFFF" stroke-width="2" opacity="0.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 38H38" stroke="#FFFFFF" stroke-width="1.5" opacity="0.25"/><path d="M22 34L28 40L42 22" stroke="#DE7356" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 28L54 20" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.6"/><path d="M46 36L52 30" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.4"/><path d="M46 44L50 40" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.2"/></svg>
+      <svg viewBox="130 45 450 130" height="32" xmlns="http://www.w3.org/2000/svg">
+        <text x="360" y="114.4" dominant-baseline="middle" text-anchor="end" font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="88" font-weight="500" fill="#FFFFFF">Send</text>
+        <text x="360" y="114.4" dominant-baseline="middle" text-anchor="start" font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="88" font-weight="600" font-style="italic" fill="#DE7356">Sign</text>
+      </svg>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#cowork">Cowork</a>
+      <a href="#commands">Commands</a>
+      <a href="#comparison">Compare</a>
+      <a href="#pricing">Pricing</a>
+      <a href="https://github.com/SendSign/SendSign">GitHub</a>
+      <a href="/app" class="nav-cta">Start Free</a>
+    </div>
+    <button class="mobile-menu-btn" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        Now available — open source under AGPL-3.0
+      </div>
+      <h1>E-signatures<br>for the <span class="accent">AI era</span></h1>
+      <p class="hero-description">
+        The first e-signature platform built for AI agents. Send documents for signing from Anthropic Cowork, any MCP client, or a simple API call.
+      </p>
+      <div class="hero-ctas">
+        <a href="/app" class="btn-primary">
+          Start Free
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <a href="https://github.com/SendSign/SendSign" class="btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          Self-Host Free
+        </a>
+      </div>
+    </div>
+    <div class="hero-terminal">
+      <div class="cowork-window">
+        <div class="cowork-titlebar">
+          <div class="cowork-dots">
+            <div class="cowork-dot r"></div>
+            <div class="cowork-dot y"></div>
+            <div class="cowork-dot g"></div>
+          </div>
+          <div class="cowork-tabs">
+            <div class="cowork-tab">Chat</div>
+            <div class="cowork-tab active">Cowork</div>
+            <div class="cowork-tab">Code</div>
+          </div>
+          <div style="width:34px;"></div>
+        </div>
+        <div class="cowork-layout">
+          <div class="cowork-main">
+            <div class="cowork-task" id="cowork-task-label">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+              <span id="task-name">Send NDA for signature via SendSign</span>
+            </div>
+            <div class="cowork-chat" id="cowork-chat">
+              <!-- Messages injected by JS -->
+            </div>
+            <div class="cowork-input-bar">
+              <div class="cowork-plus-btn">
+                <svg width="12" height="12" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M6 1v10M1 6h10"/></svg>
+              </div>
+              <span class="cowork-input-placeholder">Reply...</span>
+              <div class="cowork-input-right">
+                <span class="cowork-model-badge">Opus 4.6 <svg width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+                <div class="cowork-send-btn">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cowork-sidebar">
+            <div class="sidebar-panel">
+              <div class="sidebar-panel-header">
+                Progress
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+            <div class="sidebar-panel">
+              <div class="sidebar-panel-header" id="sidebar-task-name" style="font-size:11px;">
+                sendsign
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </div>
+            </div>
+            <div class="sidebar-panel">
+              <div class="sidebar-panel-header">
+                Context
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+              <div class="sidebar-context-items">
+                <div class="context-doc">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                </div>
+                <div class="context-doc">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                </div>
+                <div class="context-doc add">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v10M1 6h10"/></svg>
+                </div>
+              </div>
+              <div class="sidebar-context-caption">Track tools and referenced files used in this task.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</section>
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">How it works</span>
+      <h2 class="section-title">Three steps. Thirty seconds.</h2>
+      <p class="section-subtitle">No setup wizards, no training sessions. If you can talk to Claude, you can send documents for signature.</p>
+    </div>
+    <div class="steps-grid reveal">
+      <div class="step-card">
+        <div class="step-number">01</div>
+        <h3>Install the plugin</h3>
+        <p>Download the SendSign plugin and drag it into Cowork. Your API key is pre-configured. That's the entire setup.</p>
+        <span class="step-tag time">30 seconds</span>
+      </div>
+      <div class="step-card">
+        <h3>Tell Claude what to send</h3>
+        <div class="step-number">02</div>
+        <p>"Send this MSA to alex@partner.co for signature." Claude uploads the document, places signature fields, and sends the signing link.</p>
+        <span class="step-tag time">One sentence</span>
+      </div>
+      <div class="step-card">
+        <div class="step-number">03</div>
+        <h3>Track and download</h3>
+        <p>"Has Jane signed the NDA yet?" Get status updates, send reminders, and download the fully executed document — all from Cowork.</p>
+        <span class="step-tag time">Instant</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COWORK CAPABILITIES -->
+<section class="section capabilities-section" id="cowork">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Cowork + SendSign</span>
+      <h2 class="section-title">What you can do from Cowork</h2>
+      <p class="section-subtitle">SendSign was designed for AI agents first. Every capability is available as a natural language command.</p>
+    </div>
+    <div class="capabilities-grid reveal">
+      <div class="capability-card">
+        <div class="capability-icon orange">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+        <h3>Generate &amp; sign in one shot</h3>
+        <p>Ask Claude to draft an NDA, MSA, or offer letter — it generates the document with signature blocks already in place. No manual field placement. Ever.</p>
+        <div class="capability-example">"Draft a mutual NDA between us and Globex Inc and send it to legal@globex.com"</div>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon orange">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        </div>
+        <h3>Legal review → sign in one flow</h3>
+        <p>Use Cowork's Legal plugin to review and redline a contract. When you're done, say "send this for signature" — SendSign picks it up and sends it. Review and execution in one conversation.</p>
+        <div class="capability-example">"Send this reviewed contract to sarah@partner.co — I need to sign it too"</div>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon green">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <h3>Self-sign without leaving</h3>
+        <p>"I need to sign it too." Your signature is applied via the API — you never leave Cowork. The other party gets the partially-executed doc with your signature already on it.</p>
+        <div class="capability-example">"Send the SOW to procurement — sign my part first"</div>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon blue">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z"/></svg>
+        </div>
+        <h3>Template learning</h3>
+        <p>Place fields once — it's a template forever. "Save this layout as our Standard NDA template." Next time, just say the template name and the recipient. Fully automatic.</p>
+        <div class="capability-example">"Send our Standard NDA to the new vendor"</div>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon yellow">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h3>Automated follow-ups</h3>
+        <p>"Remind them after 3 days if they haven't signed." Set it and forget it. Escalating reminders at intervals you choose, with sender notification when things go overdue.</p>
+        <div class="capability-example">"Set up reminders at 3, 7, and 14 days"</div>
+      </div>
+      <div class="capability-card">
+        <div class="capability-icon green">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <h3>Morning briefing</h3>
+        <p>"What's my signing status?" Get a structured overview of everything pending, overdue, and recently completed. Know who's holding things up before your first meeting.</p>
+        <div class="capability-example">"Give me a briefing on all pending signatures"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMANDS REFERENCE -->
+<section class="section" id="commands">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Commands</span>
+      <h2 class="section-title">Everything you can say to Claude</h2>
+      <p class="section-subtitle">Natural language commands. No syntax to learn. Just tell Claude what you need.</p>
+    </div>
+    <div class="commands-grid reveal">
+      <div class="command-group">
+        <h3 class="command-group-title">
+          <span class="command-group-icon" style="background:var(--accent-glow);color:var(--accent);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+          </span>
+          Send & Sign
+        </h3>
+        <div class="command-item">
+          <code>"Send this NDA to jane@acme.com for signature"</code>
+          <span class="command-desc">Upload and send a document for signing</span>
+        </div>
+        <div class="command-item">
+          <code>"Send the SOW to procurement — sign my part first"</code>
+          <span class="command-desc">Self-sign before sending to counterparty</span>
+        </div>
+        <div class="command-item">
+          <code>"Send this to alice@co.com, bob@co.com, and carol@co.com"</code>
+          <span class="command-desc">Multi-party signing with routing order</span>
+        </div>
+        <div class="command-item">
+          <code>"Bulk send this offer letter to all 12 candidates"</code>
+          <span class="command-desc">Bulk send with per-recipient customization</span>
+        </div>
+      </div>
+      <div class="command-group">
+        <h3 class="command-group-title">
+          <span class="command-group-icon" style="background:var(--green-dim);color:var(--green);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </span>
+          Generate & Create
+        </h3>
+        <div class="command-item">
+          <code>"Draft a mutual NDA between us and Globex Inc"</code>
+          <span class="command-desc">Generate a document with signature fields placed</span>
+        </div>
+        <div class="command-item">
+          <code>"Create an offer letter for the senior engineer role"</code>
+          <span class="command-desc">Generate from description with smart field placement</span>
+        </div>
+        <div class="command-item coming-soon-cmd">
+          <code>"Generate an MSA using our standard terms"</code>
+          <span class="command-desc">Generate from saved templates</span>
+          <span class="cmd-badge soon">Coming soon</span>
+        </div>
+        <div class="command-item coming-soon-cmd">
+          <code>"Review this contract with Legal, then send for signature"</code>
+          <span class="command-desc">Cowork Legal integration — review → sign flow</span>
+          <span class="cmd-badge soon">Coming soon</span>
+        </div>
+      </div>
+      <div class="command-group">
+        <h3 class="command-group-title">
+          <span class="command-group-icon" style="background:rgba(110,158,207,0.15);color:var(--blue);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </span>
+          Track & Manage
+        </h3>
+        <div class="command-item">
+          <code>"Has Jane signed the NDA yet?"</code>
+          <span class="command-desc">Check status of any envelope</span>
+        </div>
+        <div class="command-item">
+          <code>"Give me a briefing on all pending signatures"</code>
+          <span class="command-desc">Morning briefing — pending, overdue, completed</span>
+        </div>
+        <div class="command-item">
+          <code>"Send a reminder to the unsigned parties on the MSA"</code>
+          <span class="command-desc">Manual nudge for outstanding signatures</span>
+        </div>
+        <div class="command-item">
+          <code>"Download the fully executed NDA"</code>
+          <span class="command-desc">Get the final signed PDF with certificates</span>
+        </div>
+      </div>
+      <div class="command-group">
+        <h3 class="command-group-title">
+          <span class="command-group-icon" style="background:rgba(207,184,110,0.15);color:var(--yellow);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
+          Templates & Config
+        </h3>
+        <div class="command-item">
+          <code>"Save this layout as our Standard NDA template"</code>
+          <span class="command-desc">Save field placement as reusable template</span>
+        </div>
+        <div class="command-item">
+          <code>"Send our Standard NDA to the new vendor"</code>
+          <span class="command-desc">Use a saved template by name</span>
+        </div>
+        <div class="command-item">
+          <code>"Set up reminders at 3, 7, and 14 days"</code>
+          <span class="command-desc">Configure automatic follow-up cadence</span>
+        </div>
+        <div class="command-item coming-soon-cmd">
+          <code>"Void the envelope — we're going with a different vendor"</code>
+          <span class="command-desc">Cancel an in-progress envelope</span>
+          <span class="cmd-badge soon">Coming soon</span>
+        </div>
+        <div class="command-item coming-soon-cmd">
+          <code>"Show me all templates"</code>
+          <span class="command-desc">List and manage saved templates</span>
+          <span class="cmd-badge soon">Coming soon</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Core Platform</span>
+      <h2 class="section-title">Everything you need. Nothing you don't.</h2>
+      <p class="section-subtitle">Full-featured e-signatures with an API-first architecture designed for automation.</p>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>MCP Native</h3>
+        <p>17 MCP tools out of the box. Works with Cowork, Claude Code, and any MCP-compatible client. No custom integration needed.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16m-7 6h7"/></svg></span>REST API</h3>
+        <p>Three endpoints to create, send, and check status. Usage-based, no per-seat pricing. Webhook notifications for every event.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></span>Legally Binding</h3>
+        <p>Compliant with ESIGN Act (US) and eIDAS (EU). Electronic consent capture, IP recording, and tamper-evident audit trails.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></span>PDF Flattening</h3>
+        <p>Signatures are embedded directly into the PDF. The signed document is a standalone file — no special viewer needed.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></span>Completion Certificate</h3>
+        <p>Every signed document includes a certificate with SHA-256 hash, signer details, IP addresses, timestamps, and consent records.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg></span>Webhooks</h3>
+        <p>Real-time notifications for every event: sent, viewed, signed, completed, voided. Integrate with any workflow.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg></span>Templates</h3>
+        <p>Create once, reuse forever. Templates store document layouts, field positions, and signer roles. Fully automatic from Cowork.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></span>Bulk Send</h3>
+        <p>Send the same document to hundreds of recipients at once. Each gets their own signing link and independent tracking.</p>
+      </div>
+      <div class="feature-card">
+        <h3><span class="icon"><svg width="14" height="14" fill="none" stroke="#DE7356" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg></span>Open Source</h3>
+        <p>Full source code on GitHub under AGPL-3.0. Self-host on your own infrastructure with zero usage limits. Audit every line.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section class="section security-section" id="security">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Security &amp; Compliance</span>
+      <h2 class="section-title">Enterprise-grade security.<br>Open-source transparency.</h2>
+    </div>
+    <div class="security-grid reveal">
+      <div class="security-list">
+        <div class="security-item">
+          <div class="security-icon">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </div>
+          <div>
+            <h4>AES-256 Encryption at Rest</h4>
+            <p>All documents and signatures encrypted using AES-256 in your storage layer. Keys managed per-tenant for isolation.</p>
+          </div>
+        </div>
+        <div class="security-item">
+          <div class="security-icon">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <div>
+            <h4>TLS 1.3 in Transit</h4>
+            <p>Every connection — API calls, signing ceremonies, webhook deliveries — encrypted with TLS 1.3. No exceptions.</p>
+          </div>
+        </div>
+        <div class="security-item">
+          <div class="security-icon">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+          </div>
+          <div>
+            <h4>SHA-256 Document Hashing</h4>
+            <p>Every signed document includes a SHA-256 hash in the completion certificate. Tamper detection is built in — any modification breaks the hash.</p>
+          </div>
+        </div>
+        <div class="security-item">
+          <div class="security-icon">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          </div>
+          <div>
+            <h4>Full Audit Trail</h4>
+            <p>Every action logged with timestamp, IP address, and user agent. Consent records for each signer. Exportable for compliance reviews.</p>
+          </div>
+        </div>
+        <div class="security-item">
+          <div class="security-icon">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          </div>
+          <div>
+            <h4>Multi-Tenant Isolation</h4>
+            <p>PostgreSQL Row-Level Security ensures tenants can never access each other's data. Storage paths are tenant-prefixed. API keys are tenant-scoped.</p>
+          </div>
+        </div>
+      </div>
+      <div class="security-badge-group">
+        <div class="compliance-badge">
+          <div class="badge-icon" style="background: var(--green-dim); color: var(--green);">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <h4>ESIGN Act Compliant</h4>
+            <p>Legally binding in the United States under the Electronic Signatures in Global and National Commerce Act.</p>
+          </div>
+        </div>
+        <div class="compliance-badge">
+          <div class="badge-icon" style="background: rgba(110, 158, 207, 0.15); color: var(--blue);">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <h4>eIDAS Compliant</h4>
+            <p>Valid electronic signatures across the European Union under the eIDAS regulation.</p>
+          </div>
+        </div>
+        <div class="compliance-badge">
+          <div class="badge-icon" style="background: var(--accent-glow); color: var(--accent);">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          </div>
+          <div>
+            <h4>Open Source Auditable</h4>
+            <p>Every line of code is public. No security through obscurity. Verify the cryptography yourself.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="section" id="comparison">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Why SendSign</span>
+      <h2 class="section-title">The honest comparison</h2>
+      <p class="section-subtitle">We're not trying to replace DocuSign for Fortune 500 companies. We're building for the AI-native future.</p>
+    </div>
+    <div class="comparison-table-wrap reveal">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="highlight">Send<em style="color:var(--accent);font-style:italic;">Sign</em></th>
+            <th>DocuSign</th>
+            <th>Dropbox Sign</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>MCP / AI Agent Support</td>
+            <td class="highlight-col"><span class="check">17 MCP tools</span></td>
+            <td><span class="cross">No</span></td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>Cowork Plugin</td>
+            <td class="highlight-col"><span class="check">Native</span></td>
+            <td><span class="cross">No</span></td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>AI Document Generation</td>
+            <td class="highlight-col"><span class="check">Built-in</span></td>
+            <td><span class="cross">No</span></td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>Self-Sign via API</td>
+            <td class="highlight-col"><span class="check">Yes</span></td>
+            <td><span class="cross">No</span></td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>Legal Review Integration</td>
+            <td class="highlight-col"><span class="check"><span class="cowork-note">via Cowork Legal</span></span></td>
+            <td><span class="partial">CLM add-on ($$$)</span></td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>Contract Generation</td>
+            <td class="highlight-col"><span class="check"><span class="cowork-note">via Cowork</span></span></td>
+            <td><span class="cross">No</span></td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>Open Source</td>
+            <td class="highlight-col"><span class="check">AGPL-3.0</span></td>
+            <td><span class="cross">No</span></td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>Self-Hostable</td>
+            <td class="highlight-col"><span class="check">Docker</span></td>
+            <td><span class="cross">No</span></td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>REST API</td>
+            <td class="highlight-col"><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+          </tr>
+          <tr>
+            <td>Webhooks</td>
+            <td class="highlight-col"><span class="check">All tiers</span></td>
+            <td><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+          </tr>
+          <tr>
+            <td>Templates</td>
+            <td class="highlight-col"><span class="check">All tiers</span></td>
+            <td><span class="partial">Business Pro+</span></td>
+            <td><span class="check">Yes</span></td>
+          </tr>
+          <tr>
+            <td>Bulk Send</td>
+            <td class="highlight-col"><span class="check">All tiers</span></td>
+            <td><span class="partial">Business Pro+</span></td>
+            <td><span class="partial">Paid add-on</span></td>
+          </tr>
+          <tr>
+            <td>ESIGN / eIDAS</td>
+            <td class="highlight-col"><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+          </tr>
+          <tr>
+            <td>Audit Trail</td>
+            <td class="highlight-col"><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+          </tr>
+          <tr>
+            <td>SSO / SAML</td>
+            <td class="highlight-col"><span class="partial">White-label</span></td>
+            <td><span class="check">Enterprise</span></td>
+            <td><span class="check">Enterprise</span></td>
+          </tr>
+          <tr>
+            <td>Starting Price</td>
+            <td class="highlight-col"><span class="check">Free / $29/user/mo</span></td>
+            <td>$10/user/mo</td>
+            <td>$15/mo</td>
+          </tr>
+          <tr>
+            <td>Per-Envelope Limits</td>
+            <td class="highlight-col"><span class="check">Unlimited ($29)</span></td>
+            <td>5/mo at $10</td>
+            <td>Unlimited (1 user)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Pricing</span>
+      <h2 class="section-title">Simple, honest pricing</h2>
+      <p class="section-subtitle">No per-envelope fees. No hidden costs. No feature hostage-taking.</p>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="pricing-card">
+        <div class="pricing-tier">Self-Hosted</div>
+        <div class="pricing-price">Free</div>
+        <p class="pricing-desc">Run SendSign on your own infrastructure. Full source code, no limits, forever.</p>
+        <ul class="pricing-features">
+          <li>Unlimited envelopes</li>
+          <li>Unlimited users</li>
+          <li>Full API + MCP</li>
+          <li>Webhooks</li>
+          <li>Templates + bulk send</li>
+          <li>Completion certificates</li>
+          <li>"Powered by SendSign" badge</li>
+          <li>Community support (GitHub)</li>
+        </ul>
+        <a href="https://github.com/SendSign/SendSign" class="pricing-btn secondary">View on GitHub</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-tier">Pro</div>
+        <div class="pricing-price">$29 <span class="unit">/ user / mo</span></div>
+        <p class="pricing-desc">We host it. We maintain it. You send documents. That's it.</p>
+        <ul class="pricing-features">
+          <li>Everything in Self-Hosted</li>
+          <li>Hosted and maintained by us</li>
+          <li>Automatic updates + backups</li>
+          <li>30-day audit log</li>
+          <li>Cowork plugin (pre-configured)</li>
+          <li>Custom subdomain</li>
+          <li>Email support</li>
+        </ul>
+        <a href="/app" class="pricing-btn primary">Start Now</a>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-tier">White-Label</div>
+        <div class="pricing-price">Custom</div>
+        <p class="pricing-desc">Your brand. Your domain. Commercial license. Enterprise compliance.</p>
+        <ul class="pricing-features">
+          <li>Everything in Managed</li>
+          <li>Your branding — no SendSign badge</li>
+          <li>Custom domain + email domain</li>
+          <li>SAML / OIDC SSO</li>
+          <li>SCIM user provisioning</li>
+          <li>Audit log export + unlimited retention</li>
+          <li>Embedded signing (iframe)</li>
+          <li>Custom RBAC roles</li>
+          <li>Commercial license (removes AGPL)</li>
+          <li>Dedicated support + SLA</li>
+        </ul>
+        <a href="#contact" class="pricing-btn secondary">Contact Us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OPEN SOURCE -->
+<section class="section oss-section" id="open-source">
+  <div class="container">
+    <div class="oss-content reveal">
+      <div class="oss-text">
+        <span class="section-label">Open Source</span>
+        <h2 class="section-title">Runs anywhere.<br>Owned by you.</h2>
+        <p class="section-subtitle" style="margin-bottom: 24px;">SendSign is open source under AGPL-3.0. Self-host on any machine with Docker. No vendor lock-in. No usage limits. Audit every line of code.</p>
+        <a href="https://github.com/SendSign/SendSign" class="btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          Star on GitHub
+        </a>
+      </div>
+      <div class="oss-code">
+        <div><span class="prompt">$</span> <span class="cmd">git clone https://github.com/SendSign/SendSign</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">cd sendsign</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">docker compose up</span></div>
+        <br>
+        <div style="color: var(--green);">✓ SendSign running at localhost:3000</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT FORM -->
+<section class="section" id="contact" style="background: var(--bg-primary);">
+  <div class="container" style="max-width:600px;">
+    <div class="reveal">
+      <span class="section-label">Contact</span>
+      <h2 class="section-title">Get in touch</h2>
+      <p class="section-subtitle" style="margin-bottom:40px;">Questions about enterprise pricing, white-label, or partnerships? We'd love to hear from you.</p>
+    </div>
+    <form action="https://formspree.io/f/mjgeyoer" method="POST" class="reveal" style="display:flex;flex-direction:column;gap:16px;">
+      <input type="text" name="name" placeholder="Your name" required style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;">
+      <input type="email" name="email" placeholder="Work email" required style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;">
+      <select name="interest" style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-secondary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;cursor:pointer;">
+        <option value="" disabled selected>What are you interested in?</option>
+        <option value="managed">Pro Plan ($29/user/mo)</option>
+        <option value="whitelabel">White-Label / Enterprise</option>
+        <option value="partnership">Partnership</option>
+        <option value="other">Something else</option>
+      </select>
+      <textarea name="message" placeholder="Tell us about your needs..." rows="4" style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;resize:vertical;"></textarea>
+      <button type="submit" class="btn-primary" style="align-self:flex-start;border:none;">Send Message
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="10" width="30" height="40" rx="3" stroke="#FFFFFF" stroke-width="2" opacity="0.5"/><path d="M32 10V18H40" stroke="#FFFFFF" stroke-width="2" opacity="0.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 38H38" stroke="#FFFFFF" stroke-width="1.5" opacity="0.25"/><path d="M22 34L28 40L42 22" stroke="#DE7356" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 28L54 20" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.6"/><path d="M46 36L52 30" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.4"/><path d="M46 44L50 40" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.2"/></svg>
+          <svg viewBox="130 45 450 130" height="28" xmlns="http://www.w3.org/2000/svg">
+            <text x="360" y="114.4" dominant-baseline="middle" text-anchor="end" font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="88" font-weight="500" fill="#FFFFFF">Send</text>
+            <text x="360" y="114.4" dominant-baseline="middle" text-anchor="start" font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="88" font-weight="600" font-style="italic" fill="#DE7356">Sign</text>
+          </svg>
+        </div>
+        <p>The first e-signature platform built for AI agents. Open source. API-first. Made for Cowork.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#features">Features</a>
+        <a href="#cowork">Cowork Integration</a>
+        <a href="#comparison">Compare</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#security">Security</a>
+      </div>
+      <div class="footer-col">
+        <h4>Developers</h4>
+        <a href="https://github.com/SendSign/SendSign">GitHub</a>
+        <a href="#coming-soon" class="coming-soon-link">API Documentation</a>
+        <a href="#coming-soon" class="coming-soon-link">MCP Server Spec</a>
+        <a href="#coming-soon" class="coming-soon-link">Self-Hosting Guide</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="#contact">Contact</a>
+        <a href="#contact">Enterprise Sales</a>
+        <a href="#coming-soon" class="coming-soon-link">Terms of Service</a>
+        <a href="#coming-soon" class="coming-soon-link">Privacy Policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 SendSign. Open source under AGPL-3.0.</span>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="https://www.linkedin.com/company/sendsigndev" style="color:var(--text-secondary);text-decoration:none;display:flex;align-items:center;gap:6px;font-size:13px;" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          LinkedIn
+        </a>
+        <span>Built for Anthropic Cowork</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<!-- COMING SOON MODAL -->
+<div id="coming-soon-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:var(--bg-primary);border:1px solid var(--border-light);border-radius:16px;padding:48px;text-align:center;max-width:420px;margin:20px;position:relative;">
+    <div style="font-size:64px;margin-bottom:16px;">🚧</div>
+    <h3 style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:600;margin-bottom:12px;">Coming Soon</h3>
+    <p style="color:var(--text-secondary);font-size:15px;line-height:1.7;margin-bottom:28px;">We're still building this page. Check back soon or follow us on GitHub for updates.</p>
+    <button onclick="document.getElementById('coming-soon-modal').style.display='none'" class="btn-primary" style="border:none;cursor:pointer;">Got it</button>
+  </div>
+</div>
+
+<script>
+// Nav scroll effect
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+reveals.forEach(el => observer.observe(el));
+
+// Coming soon modal for dead links
+document.querySelectorAll('.coming-soon-link, a[href="#coming-soon"]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('coming-soon-modal').style.display = 'flex';
+  });
+});
+
+// Close modal on backdrop click
+document.getElementById('coming-soon-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    e.currentTarget.style.display = 'none';
+  }
+});
+
+// Mobile menu
+document.querySelector('.mobile-menu-btn')?.addEventListener('click', () => {
+  document.querySelector('.nav-links').classList.toggle('active');
+});
+
+// ── COWORK UI ANIMATION ──
+const scenarios = [
+  {
+    task: 'Send NDA for signature via SendSign',
+    sidebar: 'nda-signing',
+    userMsg: 'Send this NDA to jane@acme.com for signature',
+    claudeLines: [
+      'Done. I sent the NDA to Jane using your Standard NDA template.',
+      '',
+      '<span class="meta-label">Envelope:</span> <span class="meta-value">#NDA-2026-0142</span>',
+      '<span class="meta-label">Status:</span> <span class="meta-value">Sent ✓</span>',
+      '<span class="meta-label">Reminders:</span> <span class="meta-value">3 and 7 days</span>',
+    ]
+  },
+  {
+    task: 'Check signature status',
+    sidebar: 'msa-status',
+    userMsg: 'Has anyone signed the MSA yet?',
+    claudeLines: [
+      'Here\'s the status on the Globex MSA:',
+      '',
+      '<span class="meta-label">Alice Chen</span> — <span class="meta-value">Signed 2h ago ✓</span>',
+      '<span class="meta-label">Bob Park</span> — <span style="color:var(--yellow)">Viewed, not signed</span>',
+      '<span class="meta-label">Carol Wu</span> — <span style="color:var(--text-tertiary)">Not yet opened</span>',
+      '',
+      'Want me to nudge Bob and Carol?',
+    ]
+  },
+  {
+    task: 'Generate and send contract',
+    sidebar: 'nda-globex',
+    userMsg: 'Draft an NDA for Globex Inc and send it to legal@globex.com',
+    claudeLines: [
+      'I generated a mutual NDA between you and Globex Inc with signature blocks for both parties.',
+      '',
+      '<span class="meta-label">Document:</span> <span class="meta-value">Mutual NDA — Globex</span>',
+      '<span class="meta-label">Sent to:</span> <span class="meta-value">legal@globex.com</span>',
+      '<span class="meta-label">Your sig:</span> <span class="meta-value">Applied ✓</span>',
+    ]
+  },
+  {
+    task: 'Morning signature briefing',
+    sidebar: 'daily-briefing',
+    userMsg: 'Give me a briefing on all pending signatures',
+    claudeLines: [
+      'Morning briefing — 6 active envelopes:',
+      '',
+      '<span class="meta-label">Overdue:</span> <span style="color:var(--red)">1 — SOW (Acme, 5 days)</span>',
+      '<span class="meta-label">Pending:</span> <span style="color:var(--yellow)">3 — MSA, NDA, Offer</span>',
+      '<span class="meta-label">Completed:</span> <span class="meta-value">2 today ✓</span>',
+      '',
+      'The Acme SOW is 5 days overdue. Should I send a final reminder?',
+    ]
+  },
+  {
+    task: 'Bulk send offer letters',
+    sidebar: 'offers-batch',
+    userMsg: 'Bulk send this offer letter to all 12 candidates',
+    claudeLines: [
+      'Sending offer letters to 12 recipients using the Engineering Offer template.',
+      '',
+      '<span class="meta-label">Template:</span> <span class="meta-value">Engineering Offer</span>',
+      '<span class="meta-label">Sent:</span> <span class="meta-value">12 / 12 ✓</span>',
+      '<span class="meta-label">Tracking:</span> <span class="meta-value">All envelopes active</span>',
+    ]
+  }
+];
+
+let currentScenario = 0;
+const chatArea = document.getElementById('cowork-chat');
+const taskLabel = document.getElementById('task-name');
+const sidebarTask = document.getElementById('sidebar-task-name');
+
+function typeInto(el, text, speed = 28) {
+  return new Promise(resolve => {
+    let i = 0;
+    el.textContent = '';
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor-blink';
+    cursor.textContent = '|';
+    el.appendChild(cursor);
+    const interval = setInterval(() => {
+      cursor.before(document.createTextNode(text[i]));
+      i++;
+      if (i >= text.length) {
+        clearInterval(interval);
+        cursor.remove();
+        resolve();
+      }
+    }, speed);
+  });
+}
+
+function addClaudeResponse(lines) {
+  return new Promise(resolve => {
+    const msg = document.createElement('div');
+    msg.className = 'cowork-msg fade-in';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'cowork-avatar claude';
+    avatar.innerHTML = '✦';
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'cowork-bubble';
+    
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    chatArea.appendChild(msg);
+
+    let delay = 0;
+    lines.forEach((line, idx) => {
+      setTimeout(() => {
+        if (line === '') {
+          bubble.appendChild(document.createElement('br'));
+        } else {
+          const div = document.createElement('div');
+          div.innerHTML = line;
+          div.style.opacity = '0';
+          div.style.animation = 'fadeIn 0.3s ease forwards';
+          div.style.animationDelay = '0ms';
+          bubble.appendChild(div);
+        }
+        if (idx === lines.length - 1) {
+          setTimeout(resolve, 400);
+        }
+      }, delay);
+      delay += 120;
+    });
+  });
+}
+
+async function runCoworkScenario() {
+  const scenario = scenarios[currentScenario];
+  
+  // Update task label and sidebar
+  taskLabel.textContent = scenario.task;
+  if (sidebarTask) {
+    sidebarTask.childNodes[0].textContent = scenario.sidebar + ' ';
+  }
+  
+  // Clear chat
+  chatArea.innerHTML = '';
+  
+  // Create user message with typing
+  const userMsg = document.createElement('div');
+  userMsg.className = 'cowork-msg';
+  
+  const userAvatar = document.createElement('div');
+  userAvatar.className = 'cowork-avatar user';
+  userAvatar.textContent = 'Y';
+  
+  const userBubble = document.createElement('div');
+  userBubble.className = 'cowork-bubble';
+  
+  userMsg.appendChild(userAvatar);
+  userMsg.appendChild(userBubble);
+  chatArea.appendChild(userMsg);
+  
+  // Type user message
+  await typeInto(userBubble, scenario.userMsg, 25);
+  
+  // Pause like Claude is thinking
+  await new Promise(r => setTimeout(r, 800));
+  
+  // Show Claude response
+  await addClaudeResponse(scenario.claudeLines);
+  
+  // Hold for reading
+  await new Promise(r => setTimeout(r, 4000));
+  
+  // Next
+  currentScenario = (currentScenario + 1) % scenarios.length;
+  runCoworkScenario();
+}
+
+setTimeout(runCoworkScenario, 1200);
+</script>
+</body>
+</html>
