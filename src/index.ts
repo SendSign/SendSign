@@ -136,11 +136,11 @@ app.use('/api/compliance', apiRateLimiter, authenticate, tenantContext, complian
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const signingUiPath = path.resolve(__dirname, '../signing-ui/dist');
-const marketingPath = path.resolve(__dirname, '../marketing');
+const marketingPath = path.join(__dirname, '..', 'marketing', 'index.html');
 
 // Log resolved paths for debugging
 console.log('Signing UI path:', signingUiPath, '| Exists:', fs.existsSync(signingUiPath));
-console.log('Marketing path:', marketingPath, '| Exists:', fs.existsSync(marketingPath));
+console.log('Marketing page:', marketingPath, '| Exists:', fs.existsSync(marketingPath));
 
 // Billing success/cancel pages — redirect to API billing routes
 app.get('/billing/success', (req, res) => {
@@ -151,6 +151,24 @@ app.get('/billing/cancel', (_req, res) => {
   res.redirect('/');
 });
 
+// ─── Route: Marketing Landing Page (MUST BE FIRST) ──────────────────
+
+// Root path serves the marketing landing page
+if (fs.existsSync(marketingPath)) {
+  app.get('/', (req, res) => res.sendFile(marketingPath));
+} else {
+  console.warn('⚠️  Marketing page not found at', marketingPath);
+  app.get('/', (req, res) => {
+    res.status(503).json({
+      success: false,
+      error: 'Marketing page not available',
+      message: 'The landing page is not built. Try /app for the signing dashboard.',
+    });
+  });
+}
+
+// ─── Serve Static Assets from Signing UI ────────────────────────────
+
 // Serve static assets from signing-ui (CSS, JS, images, manifest.json)
 // These need to be accessible from all signing UI routes
 if (fs.existsSync(signingUiPath)) {
@@ -160,28 +178,13 @@ if (fs.existsSync(signingUiPath)) {
   }));
   
   // Serve other static files (manifest.json, service worker, etc.)
+  // Important: index: false prevents this from serving index.html at /
   app.use(express.static(signingUiPath, {
     maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
     etag: true,
-    index: false, // Don't serve index.html automatically
+    index: false,
   }));
 }
-
-// ─── Route: Marketing Landing Page ──────────────────────────────────
-
-// Root path serves the marketing landing page
-app.get('/', (req, res) => {
-  const marketingIndex = path.join(marketingPath, 'index.html');
-  if (fs.existsSync(marketingIndex)) {
-    res.sendFile(marketingIndex);
-  } else {
-    res.status(503).json({
-      success: false,
-      error: 'Marketing page not available',
-      message: 'The landing page is not built. Try /app for the signing dashboard.',
-    });
-  }
-});
 
 // ─── Route: Signing UI (React SPA) ──────────────────────────────────
 
