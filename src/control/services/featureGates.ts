@@ -34,7 +34,7 @@ export type WhitelabelFeature = typeof WHITELABEL_FEATURES[number];
  * Returns true if:
  * - The tenant's plan is 'whitelabel' or 'enterprise' (same thing)
  *
- * Returns false for 'free', 'managed', 'pro', 'business' plans.
+ * Returns false for 'free', 'pro', 'pro', 'business' plans.
  */
 export function hasFeature(tenantPlan: string, feature: WhitelabelFeature): boolean {
   // White-label and enterprise plans get all features

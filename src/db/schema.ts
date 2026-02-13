@@ -60,7 +60,7 @@ export const tenants = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
-    plan: text('plan', { enum: ['free', 'pro', 'business', 'enterprise', 'managed', 'whitelabel'] }).notNull().default('free'),
+    plan: text('plan', { enum: ['free', 'pro', 'business', 'enterprise', 'pro', 'whitelabel'] }).notNull().default('free'),
     stripeCustomerId: text('stripe_customer_id'),
     stripeSubscriptionId: text('stripe_subscription_id'),
     status: text('status', { enum: ['active', 'trialing', 'past_due', 'canceled', 'suspended'] }).notNull().default('active'),

@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import passport from 'passport';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +17,7 @@ import { csrfProtection, csrfTokenHandler } from './api/middleware/csrf.js';
 import { scheduleReminders } from './workflow/reminderScheduler.js';
 import { scheduleExpiryCheck } from './workflow/expiryManager.js';
 import { scheduleRetentionProcessing } from './workflow/retentionScheduler.js';
+import { initializeOAuth } from './auth/oauthStrategies.js';
 
 // Route imports
 import healthRoutes from './api/routes/health.js';
@@ -31,6 +34,7 @@ import authRoutes from './api/routes/auth.js';
 import complianceRoutes from './api/routes/compliance.js';
 import pluginRoutes from './api/routes/plugin.js';
 import billingRoutes, { billingWebhookRouter } from './api/routes/billing.js';
+import oauthRoutes from './api/routes/oauth.js';
 
 // Control plane imports
 import { controlAuth } from './control/middleware/controlAuth.js';
@@ -87,6 +91,25 @@ app.use(cors({
 }));
 app.use(cookieParser());
 
+// Session middleware for OAuth (Passport needs sessions)
+app.use(session({
+  secret: process.env.JWT_SECRET || 'dev-session-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  },
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Initialize OAuth strategies (Google, GitHub) if credentials are configured
+initializeOAuth();
+
 // Stripe webhook needs raw body for signature verification — mount BEFORE json parser
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }), billingWebhookRouter);
 
@@ -115,6 +138,9 @@ app.use('/api/billing', apiRateLimiter, billingRoutes);
 // Auth routes (no auth required — this IS the auth)
 app.use('/api/auth', apiRateLimiter, authRoutes);
 app.get('/api/auth/csrf-token', csrfTokenHandler);
+
+// OAuth routes (Google, GitHub login)
+app.use('/app/auth', oauthRoutes);
 
 // Signing ceremony routes (token auth, rate limited)
 // Mount at both /api/sign and /api/signing for compatibility

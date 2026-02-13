@@ -24,7 +24,7 @@ const createTenantSchema = z.object({
     .min(2)
     .max(63)
     .regex(slugPattern, 'Slug must be lowercase alphanumeric with hyphens, cannot start or end with hyphen'),
-  plan: z.enum(['free', 'pro', 'business', 'enterprise', 'managed', 'whitelabel']).default('free'),
+  plan: z.enum(['free', 'pro', 'business', 'enterprise', 'pro', 'whitelabel']).default('free'),
   adminEmail: z.string().email(),
   adminName: z.string().min(1).max(255),
   trialDays: z.number().int().min(0).max(90).optional(),
@@ -32,7 +32,7 @@ const createTenantSchema = z.object({
 
 const updateTenantSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  plan: z.enum(['free', 'pro', 'business', 'enterprise', 'managed', 'whitelabel']).optional(),
+  plan: z.enum(['free', 'pro', 'business', 'enterprise', 'pro', 'whitelabel']).optional(),
   status: z.enum(['active', 'trialing', 'past_due', 'canceled', 'suspended']).optional(),
   envelopeLimit: z.number().int().optional(),
   userLimit: z.number().int().optional(),

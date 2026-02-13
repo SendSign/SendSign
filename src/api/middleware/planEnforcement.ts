@@ -85,15 +85,24 @@ export async function enforceEnvelopeLimit(req: Request, res: Response, next: Ne
 
     if (!result.allowed) {
       const baseDomain = process.env.SENDSIGN_BASE_DOMAIN || 'sendsign.dev';
-      res.status(429).json({
+      
+      // Calculate reset date (first of next month)
+      const now = new Date();
+      const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const resetDateStr = resetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+      res.status(402).json({
         success: false,
         error: 'Monthly envelope limit reached',
         message: result.message,
-        data: {
-          plan: tenant.plan,
-          limit: result.limit,
-          used: result.current,
-          upgradeUrl: `https://${tenant.slug}.${baseDomain}/admin/billing`,
+        limit: result.limit,
+        used: result.current,
+        plan: tenant.plan,
+        resetDate: resetDateStr,
+        upgrade: {
+          plan: 'pro',
+          price: '$29/user/mo',
+          url: `https://${tenant.slug}.${baseDomain}/app/billing/upgrade`,
         },
       });
       return;

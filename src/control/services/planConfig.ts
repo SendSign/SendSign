@@ -16,35 +16,35 @@ export interface PlanLimits {
 
 export const PLAN_DEFAULTS: Record<string, PlanLimits> = {
   free: {
-    envelopeLimit: 5, // per month
+    envelopeLimit: 5, // per calendar month
     userLimit: 1,
-    templateLimit: 3,
-    bulkSendLimit: 0, // no bulk send
-    auditRetentionDays: 7,
+    templateLimit: 5,
+    bulkSendLimit: 0, // no bulk send on free
+    auditRetentionDays: 7, // 7 days on free
     features: {
       basicSigning: true,
       templates: true,
       auditTrail: true,
-      branding: false,
+      branding: false, // "Powered by SendSign" badge required
       sso: false,
       bulkSend: false,
       apiAccess: true,
-      advancedFields: false,
-      webhooks: false,
+      advancedFields: true,
+      webhooks: true,
       qes: false,
     },
   },
   pro: {
-    envelopeLimit: 100, // per month
-    userLimit: 5,
-    templateLimit: 25,
-    bulkSendLimit: 50,
-    auditRetentionDays: 90,
+    envelopeLimit: -1, // unlimited
+    userLimit: -1, // unlimited (per-user pricing via Stripe)
+    templateLimit: -1, // unlimited
+    bulkSendLimit: -1, // unlimited
+    auditRetentionDays: 30,
     features: {
       basicSigning: true,
       templates: true,
       auditTrail: true,
-      branding: true,
+      branding: false, // "Powered by SendSign" badge required
       sso: false,
       bulkSend: true,
       apiAccess: true,
@@ -91,25 +91,6 @@ export const PLAN_DEFAULTS: Record<string, PlanLimits> = {
       qes: true,
       customDomain: true,
       dedicatedInfra: true,
-    },
-  },
-  managed: {
-    envelopeLimit: -1, // unlimited
-    userLimit: 5,
-    templateLimit: -1, // unlimited
-    bulkSendLimit: 100,
-    auditRetentionDays: 30,
-    features: {
-      basicSigning: true,
-      templates: true,
-      auditTrail: true,
-      branding: false,
-      sso: false,
-      bulkSend: true,
-      apiAccess: true,
-      advancedFields: true,
-      webhooks: true,
-      qes: false,
     },
   },
   whitelabel: {

@@ -101,7 +101,7 @@ export async function provisionTenant(
     .values({
       name: input.name,
       slug: input.slug,
-      plan: input.plan as 'free' | 'pro' | 'business' | 'enterprise' | 'managed',
+      plan: input.plan as 'free' | 'pro' | 'business' | 'enterprise' | 'pro',
       status: input.trialDays && input.trialDays > 0 ? 'trialing' : 'active',
       envelopeLimit: planDefaults.envelopeLimit,
       userLimit: planDefaults.userLimit,
@@ -207,7 +207,7 @@ export async function provisionTenant(
  */
 export async function changePlan(
   tenantId: string,
-  newPlan: 'free' | 'pro' | 'business' | 'enterprise' | 'managed',
+  newPlan: 'free' | 'pro' | 'business' | 'enterprise' | 'pro',
 ): Promise<Tenant> {
   const db = getDb();
 

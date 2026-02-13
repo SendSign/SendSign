@@ -72,7 +72,7 @@ router.post('/checkout', async (req: Request, res: Response): Promise<void> => {
       metadata: {
         tenantSlug,
         adminEmail: email,
-        plan: 'managed',
+        plan: 'pro',
       },
     });
 
@@ -156,7 +156,7 @@ billingWebhookRouter.post(
           const [tenant] = await db.insert(tenants).values({
             name: tenantSlug.charAt(0).toUpperCase() + tenantSlug.slice(1),
             slug: tenantSlug,
-            plan: 'managed',
+            plan: 'pro',
             status: 'active',
             stripeCustomerId: session.customer as string,
             stripeSubscriptionId: session.subscription as string,
