@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { initConfig } from './config/index.js';
 import { getDb, closeDb } from './db/connection.js';
@@ -136,10 +137,9 @@ app.use('/api/compliance', apiRateLimiter, authenticate, tenantContext, complian
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const signingUiPath = path.resolve(__dirname, '../signing-ui/dist');
 
-// Serve static assets
-app.use('/assets', express.static(path.join(signingUiPath, 'assets')));
-app.use('/vite.svg', express.static(path.join(signingUiPath, 'vite.svg')));
-app.use('/sendsign-logo.svg', express.static(path.join(signingUiPath, 'sendsign-logo.svg')));
+// Log the resolved frontend path for debugging
+console.log('Frontend path:', signingUiPath);
+console.log('Frontend exists:', fs.existsSync(signingUiPath));
 
 // Billing success/cancel pages — redirect to API billing routes
 app.get('/billing/success', (req, res) => {
@@ -150,18 +150,42 @@ app.get('/billing/cancel', (_req, res) => {
   res.redirect('/');
 });
 
-// SPA fallback: serve index.html for signing UI routes
-const spaRoutes = ['/dashboard', '/login', '/register', '/privacy', '/terms', '/profile', '/sign/*', '/prepare/*', '/verify', '/complete', '/expired', '/in-person/*', '/powerform/*', '/admin'];
-for (const route of spaRoutes) {
-  app.get(route, (req, res) => {
+// Serve static files from the frontend build (if it exists)
+if (fs.existsSync(signingUiPath)) {
+  // Serve all static assets (CSS, JS, images, manifest.json, etc.)
+  app.use(express.static(signingUiPath, {
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+    etag: true,
+  }));
+
+  // SPA fallback: serve index.html for all non-API routes
+  app.get('*', (req, res, next) => {
+    // Skip API routes, control plane, health checks, and MCP
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/control') ||
+      req.path.startsWith('/health') ||
+      req.path.startsWith('/mcp')
+    ) {
+      return next();
+    }
+
+    // Serve index.html for all other routes (SPA routing)
     res.sendFile(path.join(signingUiPath, 'index.html'));
   });
+} else {
+  console.warn('⚠️  Frontend build not found at', signingUiPath);
+  console.warn('⚠️  The signing UI will not be available. API routes will still work.');
+  
+  // Fallback for missing frontend
+  app.get('/', (req, res) => {
+    res.status(503).json({
+      success: false,
+      error: 'Frontend not available',
+      message: 'The signing UI is not built. The API is still available at /api/*',
+    });
+  });
 }
-
-// Root route — serve dashboard
-app.get('/', (req, res) => {
-  res.sendFile(path.join(signingUiPath, 'index.html'));
-});
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
