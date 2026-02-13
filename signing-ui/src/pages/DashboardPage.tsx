@@ -7,6 +7,8 @@ import {
   ChevronDown, LayoutTemplate, RefreshCw,
   AlertCircle, Mail, Download, FileCheck, Upload, X, LogOut, Settings,
 } from 'lucide-react';
+import { UsageWidget } from '../components/UsageWidget';
+import { UpgradeModal } from '../components/UpgradeModal';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -115,6 +117,8 @@ export function DashboardPage() {
   const [auditEnvelope, setAuditEnvelope] = useState<Envelope | null>(null);
   const [auditEvents, setAuditEvents] = useState<Array<{ id: string; eventType: string; createdAt: string; signerName: string | null; signerEmail: string | null; eventData: unknown; ipAddress: string | null; geolocation: string | null }>>([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ limit: number; used: number; resetDate: string } | null>(null);
 
   // Fetch data
   const fetchEnvelopes = useCallback(async () => {
@@ -182,6 +186,19 @@ export function DashboardPage() {
         body: formData,
       });
       const data = await res.json();
+      
+      // Check for 402 Payment Required (envelope limit reached)
+      if (res.status === 402 && data.limit && data.used && data.resetDate) {
+        setLimitInfo({
+          limit: data.limit,
+          used: data.used,
+          resetDate: data.resetDate,
+        });
+        setShowUpgradeModal(true);
+        setShowNewEnvelope(false);
+        return;
+      }
+      
       if (data.success && data.data?.id) {
         setShowNewEnvelope(false);
         setNewSubject('');
@@ -198,6 +215,11 @@ export function DashboardPage() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleUpgrade = () => {
+    setShowUpgradeModal(false);
+    navigate('/app/billing');
   };
 
   // Action toast auto-dismiss
@@ -465,11 +487,14 @@ export function DashboardPage() {
       <div className="max-w-[1400px] mx-auto px-6 py-6">
 
         {/* ── Stat Cards ────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <StatCard icon={FileText} label="Total Envelopes" value={stats.total} color="text-gray-900" iconBg="bg-gray-100" />
           <StatCard icon={Clock} label="Waiting for Others" value={stats.waiting} color="text-amber-700" iconBg="bg-amber-50" />
           <StatCard icon={CheckCircle2} label="Completed" value={stats.completed} color="text-emerald-700" iconBg="bg-emerald-50" />
           <StatCard icon={LayoutTemplate} label="Templates" value={templates.length} color="text-violet-700" iconBg="bg-violet-50" />
+          <div className="md:col-span-1">
+            <UsageWidget authHeaders={authHeaders} />
+          </div>
         </div>
 
         {/* ── Loading ────────────────────── */}
@@ -1054,6 +1079,18 @@ export function DashboardPage() {
           </div>
         </div>,
         document.body,
+      )}
+
+      {/* ═══ UPGRADE MODAL ═══ */}
+      {showUpgradeModal && limitInfo && (
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          limit={limitInfo.limit}
+          used={limitInfo.used}
+          resetDate={limitInfo.resetDate}
+          onUpgrade={handleUpgrade}
+        />
       )}
 
       {/* ═══ Audit Trail Modal ═══ */}

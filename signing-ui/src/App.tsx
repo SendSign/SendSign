@@ -13,6 +13,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { BillingPage } from './pages/BillingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { CookieConsent } from './components/CookieConsent';
 
@@ -36,6 +37,7 @@ function App() {
           <Route path="/in-person/:token" element={<InPersonPage />} />
           <Route path="/powerform/:powerformId" element={<PowerFormPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/app/billing" element={<BillingPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
