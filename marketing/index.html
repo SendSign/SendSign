@@ -60,7 +60,7 @@ body::before {
 }
 
 /* ── UTILITY ── */
-.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+.container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
 .section { padding: 120px 0; }
 .section-label {
   font-family: 'JetBrains Mono', monospace;
@@ -166,10 +166,23 @@ nav .container {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border), transparent);
 }
+.hero-inner {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  width: 100%;
+}
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 800px;
+  flex: 1;
+  min-width: 0;
+}
+.hero-terminal {
+  flex: 0 0 520px;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
 }
 .hero-badge {
   display: inline-flex;
@@ -256,47 +269,232 @@ nav .container {
   border-color: var(--text-tertiary);
   background: var(--bg-elevated);
 }
-.hero-terminal {
-  position: absolute;
-  right: -40px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 440px;
-  animation: fadeInUp 0.8s ease-out 0.4s both;
-}
-.terminal-window {
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+.cowork-window {
+  background: #1e1e1c;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  box-shadow: 
+    0 25px 80px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.04);
 }
-.terminal-bar {
+.cowork-layout {
+  display: flex;
+}
+.cowork-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cowork-sidebar {
+  width: 170px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.015);
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 10px;
+}
+.cowork-titlebar {
+  display: flex;
+  align-items: center;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 8px;
+}
+.cowork-dots { display: flex; gap: 6px; }
+.cowork-dot { width: 10px; height: 10px; border-radius: 50%; }
+.cowork-dot.r { background: #ff5f57; }
+.cowork-dot.y { background: #ffbd2e; }
+.cowork-dot.g { background: #28c840; }
+.cowork-tabs {
+  display: flex;
+  gap: 0;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 12.5px;
+  font-family: 'DM Sans', sans-serif;
+}
+.cowork-tab {
+  padding: 4px 14px;
+  color: var(--text-tertiary);
+  cursor: default;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.cowork-tab.active {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.08);
+  font-weight: 500;
+}
+.cowork-task {
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cowork-chat {
+  padding: 18px 16px;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+.cowork-msg {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.cowork-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+.cowork-avatar.user { background: rgba(180,140,110,0.2); color: #c9a07a; }
+.cowork-avatar.claude {
+  background: linear-gradient(145deg, #c8704e, #d99570);
+  color: white;
+  box-shadow: 0 2px 8px rgba(200,112,78,0.3);
+}
+.cowork-bubble {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  padding-top: 3px;
+}
+.cowork-bubble .meta-label { color: var(--text-tertiary); font-size: 12px; }
+.cowork-bubble .meta-value { color: var(--green); font-size: 12px; }
+.cowork-input-bar {
+  padding: 10px 12px 10px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.015);
+}
+.cowork-plus-btn {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cowork-input-placeholder {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: 'DM Sans', sans-serif;
+  flex: 1;
+}
+.cowork-input-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.cowork-model-badge {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.cowork-send-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(222,115,86,0.3);
+}
+
+/* sidebar panels */
+.sidebar-panel {
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  overflow: hidden;
+}
+.sidebar-panel-header {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: default;
+}
+.sidebar-panel-header svg { color: var(--text-tertiary); }
+.sidebar-task-item {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.sidebar-task-item .task-link { color: var(--text-tertiary); display: flex; }
+.sidebar-context-items {
+  padding: 8px 10px;
   display: flex;
   gap: 6px;
-  padding: 12px 16px;
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid rgba(255,255,255,0.04);
 }
-.terminal-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
+.context-doc {
+  width: 36px; height: 44px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.terminal-dot.r { background: #ff5f57; }
-.terminal-dot.y { background: #ffbd2e; }
-.terminal-dot.g { background: #28c840; }
-.terminal-body {
-  padding: 20px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  line-height: 1.8;
-  color: var(--text-secondary);
+.context-doc svg { opacity: 0.3; }
+.context-doc.add {
+  border-style: dashed;
+  border-color: rgba(255,255,255,0.12);
 }
-.terminal-body .prompt { color: var(--accent); }
-.terminal-body .cmd { color: var(--text-primary); }
-.terminal-body .comment { color: var(--text-tertiary); }
-.terminal-body .string { color: var(--green); }
-.terminal-body .response { color: var(--text-secondary); opacity: 0.8; }
+.sidebar-context-caption {
+  padding: 0 10px 8px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── TYPING ANIMATION ── */
+.cursor-blink {
+  color: var(--accent);
+  animation: blink 0.8s infinite;
+  font-weight: 300;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cowork-msg.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.4s ease forwards;
+}
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
 
 /* ── HOW IT WORKS ── */
 .steps-grid {
@@ -399,6 +597,72 @@ nav .container {
   font-size: 12px;
   color: var(--text-secondary);
   border-left: 2px solid var(--accent);
+}
+
+/* ── FEATURES ── */
+
+/* ── COMMANDS REFERENCE ── */
+.commands-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 60px;
+}
+.command-group {
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+}
+.command-group-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.command-group-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.command-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.command-item:last-child { border-bottom: none; }
+.command-item code {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+.command-desc {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.coming-soon-cmd { opacity: 0.5; }
+.cmd-badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.cmd-badge.soon {
+  background: rgba(207, 184, 110, 0.15);
+  color: var(--yellow);
 }
 
 /* ── FEATURES ── */
@@ -772,6 +1036,10 @@ footer {
 }
 
 /* ── RESPONSIVE ── */
+@media (max-width: 1280px) {
+  .cowork-sidebar { display: none; }
+  .hero-terminal { flex: 0 0 400px; }
+}
 @media (max-width: 1024px) {
   .hero-terminal { display: none; }
   .comparison-table-wrap { overflow-x: auto; }
@@ -786,6 +1054,7 @@ footer {
   .features-grid,
   .pricing-grid { grid-template-columns: 1fr; }
   .capabilities-grid { grid-template-columns: 1fr; }
+  .commands-grid { grid-template-columns: 1fr; }
   .security-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
   .oss-content { flex-direction: column; text-align: center; }
@@ -800,9 +1069,9 @@ footer {
 <!-- NAV -->
 <nav id="nav">
   <div class="container">
-    <a href="/" class="nav-logo" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+    <a href="/" class="nav-logo" style="display:flex;align-items:center;gap:4px;text-decoration:none;">
       <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="10" width="30" height="40" rx="3" stroke="#FFFFFF" stroke-width="2" opacity="0.5"/><path d="M32 10V18H40" stroke="#FFFFFF" stroke-width="2" opacity="0.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 38H38" stroke="#FFFFFF" stroke-width="1.5" opacity="0.25"/><path d="M22 34L28 40L42 22" stroke="#DE7356" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 28L54 20" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.6"/><path d="M46 36L52 30" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.4"/><path d="M46 44L50 40" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.2"/></svg>
-      <svg viewBox="145 45 430 130" height="32" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="130 45 450 130" height="32" xmlns="http://www.w3.org/2000/svg">
         <text x="360" y="114.4" dominant-baseline="middle" text-anchor="end" font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="88" font-weight="500" fill="#FFFFFF">Send</text>
         <text x="360" y="114.4" dominant-baseline="middle" text-anchor="start" font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="88" font-weight="600" font-style="italic" fill="#DE7356">Sign</text>
       </svg>
@@ -810,6 +1079,7 @@ footer {
     <div class="nav-links">
       <a href="#features">Features</a>
       <a href="#cowork">Cowork</a>
+      <a href="#commands">Commands</a>
       <a href="#comparison">Compare</a>
       <a href="#pricing">Pricing</a>
       <a href="https://github.com/SendSign/SendSign">GitHub</a>
@@ -823,7 +1093,8 @@ footer {
 
 <!-- HERO -->
 <section class="hero">
-  <div class="container" style="position: relative;">
+  <div class="container">
+    <div class="hero-inner">
     <div class="hero-content">
       <div class="hero-badge">
         <span class="dot"></span>
@@ -845,33 +1116,80 @@ footer {
       </div>
     </div>
     <div class="hero-terminal">
-      <div class="terminal-window">
-        <div class="terminal-bar">
-          <div class="terminal-dot r"></div>
-          <div class="terminal-dot y"></div>
-          <div class="terminal-dot g"></div>
+      <div class="cowork-window">
+        <div class="cowork-titlebar">
+          <div class="cowork-dots">
+            <div class="cowork-dot r"></div>
+            <div class="cowork-dot y"></div>
+            <div class="cowork-dot g"></div>
+          </div>
+          <div class="cowork-tabs">
+            <div class="cowork-tab">Chat</div>
+            <div class="cowork-tab active">Cowork</div>
+            <div class="cowork-tab">Code</div>
+          </div>
+          <div style="width:34px;"></div>
         </div>
-        <div class="terminal-body">
-          <div><span class="comment">// From Anthropic Cowork</span></div>
-          <br>
-          <div><span class="prompt">You:</span> <span class="cmd">"Send this NDA to</span></div>
-          <div><span class="cmd"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e68c878883a687858b83c885898b">[email&#160;protected]</a> for signature"</span></div>
-          <br>
-          <div><span class="prompt">Claude:</span> <span class="response">Done. I created the envelope</span></div>
-          <div><span class="response">using your Standard NDA template</span></div>
-          <div><span class="response">and sent it to Jane. She'll get</span></div>
-          <div><span class="response">a signing link at her email.</span></div>
-          <br>
-          <div><span class="response">Envelope: </span><span class="string">#NDA-2026-0142</span></div>
-          <div><span class="response">Status: </span><span class="string">Sent</span></div>
-          <div><span class="response">I set up reminders at 3 and 7 days.</span></div>
+        <div class="cowork-layout">
+          <div class="cowork-main">
+            <div class="cowork-task" id="cowork-task-label">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+              <span id="task-name">Send NDA for signature via SendSign</span>
+            </div>
+            <div class="cowork-chat" id="cowork-chat">
+              <!-- Messages injected by JS -->
+            </div>
+            <div class="cowork-input-bar">
+              <div class="cowork-plus-btn">
+                <svg width="12" height="12" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M6 1v10M1 6h10"/></svg>
+              </div>
+              <span class="cowork-input-placeholder">Reply...</span>
+              <div class="cowork-input-right">
+                <span class="cowork-model-badge">Opus 4.6 <svg width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+                <div class="cowork-send-btn">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cowork-sidebar">
+            <div class="sidebar-panel">
+              <div class="sidebar-panel-header">
+                Progress
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+            <div class="sidebar-panel">
+              <div class="sidebar-panel-header" id="sidebar-task-name" style="font-size:11px;">
+                sendsign
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </div>
+            </div>
+            <div class="sidebar-panel">
+              <div class="sidebar-panel-header">
+                Context
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+              <div class="sidebar-context-items">
+                <div class="context-doc">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                </div>
+                <div class="context-doc">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                </div>
+                <div class="context-doc add">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v10M1 6h10"/></svg>
+                </div>
+              </div>
+              <div class="sidebar-context-caption">Track tools and referenced files used in this task.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+    </div>
   </div>
 </section>
-
-<!-- HOW IT WORKS -->
 <section class="section" id="how-it-works">
   <div class="container">
     <div class="reveal">
@@ -889,7 +1207,7 @@ footer {
       <div class="step-card">
         <h3>Tell Claude what to send</h3>
         <div class="step-number">02</div>
-        <p>"Send this MSA to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1b7974795b6b7a696f757e6935787476">[email&#160;protected]</a> for signature." Claude uploads the document, places signature fields, and sends the signing link.</p>
+        <p>"Send this MSA to alex@partner.co for signature." Claude uploads the document, places signature fields, and sends the signing link.</p>
         <span class="step-tag time">One sentence</span>
       </div>
       <div class="step-card">
@@ -917,7 +1235,7 @@ footer {
         </div>
         <h3>Generate &amp; sign in one shot</h3>
         <p>Ask Claude to draft an NDA, MSA, or offer letter — it generates the document with signature blocks already in place. No manual field placement. Ever.</p>
-        <div class="capability-example">"Draft a mutual NDA between us and Globex Inc and send it to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c9aba6ab89aea5a6abacb1e7aaa6a4">[email&#160;protected]</a>"</div>
+        <div class="capability-example">"Draft a mutual NDA between us and Globex Inc and send it to legal@globex.com"</div>
       </div>
       <div class="capability-card">
         <div class="capability-icon orange">
@@ -925,7 +1243,7 @@ footer {
         </div>
         <h3>Legal review → sign in one flow</h3>
         <p>Use Cowork's Legal plugin to review and redline a contract. When you're done, say "send this for signature" — SendSign picks it up and sends it. Review and execution in one conversation.</p>
-        <div class="capability-example">"Send this reviewed contract to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d8abb9aab9b098b9bbb5bdf6bbb7b5">[email&#160;protected]</a> — I need to sign it too"</div>
+        <div class="capability-example">"Send this reviewed contract to sarah@partner.co — I need to sign it too"</div>
       </div>
       <div class="capability-card">
         <div class="capability-icon green">
@@ -958,6 +1276,123 @@ footer {
         <h3>Morning briefing</h3>
         <p>"What's my signing status?" Get a structured overview of everything pending, overdue, and recently completed. Know who's holding things up before your first meeting.</p>
         <div class="capability-example">"Give me a briefing on all pending signatures"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMANDS REFERENCE -->
+<section class="section" id="commands">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Commands</span>
+      <h2 class="section-title">Everything you can say to Claude</h2>
+      <p class="section-subtitle">Natural language commands. No syntax to learn. Just tell Claude what you need.</p>
+    </div>
+    <div class="commands-grid reveal">
+      <div class="command-group">
+        <h3 class="command-group-title">
+          <span class="command-group-icon" style="background:var(--accent-glow);color:var(--accent);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+          </span>
+          Send & Sign
+        </h3>
+        <div class="command-item">
+          <code>"Send this NDA to jane@acme.com for signature"</code>
+          <span class="command-desc">Upload and send a document for signing</span>
+        </div>
+        <div class="command-item">
+          <code>"Send the SOW to procurement — sign my part first"</code>
+          <span class="command-desc">Self-sign before sending to counterparty</span>
+        </div>
+        <div class="command-item">
+          <code>"Send this to alice@co.com, bob@co.com, and carol@co.com"</code>
+          <span class="command-desc">Multi-party signing with routing order</span>
+        </div>
+        <div class="command-item">
+          <code>"Bulk send this offer letter to all 12 candidates"</code>
+          <span class="command-desc">Bulk send with per-recipient customization</span>
+        </div>
+      </div>
+      <div class="command-group">
+        <h3 class="command-group-title">
+          <span class="command-group-icon" style="background:var(--green-dim);color:var(--green);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </span>
+          Generate & Create
+        </h3>
+        <div class="command-item">
+          <code>"Draft a mutual NDA between us and Globex Inc"</code>
+          <span class="command-desc">Generate a document with signature fields placed</span>
+        </div>
+        <div class="command-item">
+          <code>"Create an offer letter for the senior engineer role"</code>
+          <span class="command-desc">Generate from description with smart field placement</span>
+        </div>
+        <div class="command-item coming-soon-cmd">
+          <code>"Generate an MSA using our standard terms"</code>
+          <span class="command-desc">Generate from saved templates</span>
+          <span class="cmd-badge soon">Coming soon</span>
+        </div>
+        <div class="command-item coming-soon-cmd">
+          <code>"Review this contract with Legal, then send for signature"</code>
+          <span class="command-desc">Cowork Legal integration — review → sign flow</span>
+          <span class="cmd-badge soon">Coming soon</span>
+        </div>
+      </div>
+      <div class="command-group">
+        <h3 class="command-group-title">
+          <span class="command-group-icon" style="background:rgba(110,158,207,0.15);color:var(--blue);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </span>
+          Track & Manage
+        </h3>
+        <div class="command-item">
+          <code>"Has Jane signed the NDA yet?"</code>
+          <span class="command-desc">Check status of any envelope</span>
+        </div>
+        <div class="command-item">
+          <code>"Give me a briefing on all pending signatures"</code>
+          <span class="command-desc">Morning briefing — pending, overdue, completed</span>
+        </div>
+        <div class="command-item">
+          <code>"Send a reminder to the unsigned parties on the MSA"</code>
+          <span class="command-desc">Manual nudge for outstanding signatures</span>
+        </div>
+        <div class="command-item">
+          <code>"Download the fully executed NDA"</code>
+          <span class="command-desc">Get the final signed PDF with certificates</span>
+        </div>
+      </div>
+      <div class="command-group">
+        <h3 class="command-group-title">
+          <span class="command-group-icon" style="background:rgba(207,184,110,0.15);color:var(--yellow);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
+          Templates & Config
+        </h3>
+        <div class="command-item">
+          <code>"Save this layout as our Standard NDA template"</code>
+          <span class="command-desc">Save field placement as reusable template</span>
+        </div>
+        <div class="command-item">
+          <code>"Send our Standard NDA to the new vendor"</code>
+          <span class="command-desc">Use a saved template by name</span>
+        </div>
+        <div class="command-item">
+          <code>"Set up reminders at 3, 7, and 14 days"</code>
+          <span class="command-desc">Configure automatic follow-up cadence</span>
+        </div>
+        <div class="command-item coming-soon-cmd">
+          <code>"Void the envelope — we're going with a different vendor"</code>
+          <span class="command-desc">Cancel an in-progress envelope</span>
+          <span class="cmd-badge soon">Coming soon</span>
+        </div>
+        <div class="command-item coming-soon-cmd">
+          <code>"Show me all templates"</code>
+          <span class="command-desc">List and manage saved templates</span>
+          <span class="cmd-badge soon">Coming soon</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1313,14 +1748,40 @@ footer {
   </div>
 </section>
 
+<!-- CONTACT FORM -->
+<section class="section" id="contact" style="background: var(--bg-primary);">
+  <div class="container" style="max-width:600px;">
+    <div class="reveal">
+      <span class="section-label">Contact</span>
+      <h2 class="section-title">Get in touch</h2>
+      <p class="section-subtitle" style="margin-bottom:40px;">Questions about enterprise pricing, white-label, or partnerships? We'd love to hear from you.</p>
+    </div>
+    <form action="https://formspree.io/f/mjgeyoer" method="POST" class="reveal" style="display:flex;flex-direction:column;gap:16px;">
+      <input type="text" name="name" placeholder="Your name" required style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;">
+      <input type="email" name="email" placeholder="Work email" required style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;">
+      <select name="interest" style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-secondary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;cursor:pointer;">
+        <option value="" disabled selected>What are you interested in?</option>
+        <option value="managed">Pro Plan ($29/user/mo)</option>
+        <option value="whitelabel">White-Label / Enterprise</option>
+        <option value="partnership">Partnership</option>
+        <option value="other">Something else</option>
+      </select>
+      <textarea name="message" placeholder="Tell us about your needs..." rows="4" style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;resize:vertical;"></textarea>
+      <button type="submit" class="btn-primary" style="align-self:flex-start;border:none;">Send Message
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </button>
+    </form>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer>
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:4px;">
           <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="10" width="30" height="40" rx="3" stroke="#FFFFFF" stroke-width="2" opacity="0.5"/><path d="M32 10V18H40" stroke="#FFFFFF" stroke-width="2" opacity="0.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 38H38" stroke="#FFFFFF" stroke-width="1.5" opacity="0.25"/><path d="M22 34L28 40L42 22" stroke="#DE7356" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 28L54 20" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.6"/><path d="M46 36L52 30" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.4"/><path d="M46 44L50 40" stroke="#DE7356" stroke-width="2" stroke-linecap="round" opacity="0.2"/></svg>
-          <svg viewBox="145 45 430 130" height="28" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="130 45 450 130" height="28" xmlns="http://www.w3.org/2000/svg">
             <text x="360" y="114.4" dominant-baseline="middle" text-anchor="end" font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="88" font-weight="500" fill="#FFFFFF">Send</text>
             <text x="360" y="114.4" dominant-baseline="middle" text-anchor="start" font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="88" font-weight="600" font-style="italic" fill="#DE7356">Sign</text>
           </svg>
@@ -1363,33 +1824,6 @@ footer {
   </div>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
-
-<!-- CONTACT FORM -->
-<section class="section" id="contact" style="background: var(--bg-primary);">
-  <div class="container" style="max-width:600px;">
-    <div class="reveal">
-      <span class="section-label">Contact</span>
-      <h2 class="section-title">Get in touch</h2>
-      <p class="section-subtitle" style="margin-bottom:40px;">Questions about enterprise pricing, white-label, or partnerships? We'd love to hear from you.</p>
-    </div>
-    <form action="https://formspree.io/f/mjgeyoer" method="POST" class="reveal" style="display:flex;flex-direction:column;gap:16px;">
-      <input type="text" name="name" placeholder="Your name" required style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;">
-      <input type="email" name="email" placeholder="Work email" required style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;">
-      <select name="interest" style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-secondary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;cursor:pointer;">
-        <option value="" disabled selected>What are you interested in?</option>
-        <option value="managed">Pro Plan ($29/user/mo)</option>
-        <option value="whitelabel">White-Label / Enterprise</option>
-        <option value="partnership">Partnership</option>
-        <option value="other">Something else</option>
-      </select>
-      <textarea name="message" placeholder="Tell us about your needs..." rows="4" style="padding:14px 18px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;resize:vertical;"></textarea>
-      <button type="submit" class="btn-primary" style="align-self:flex-start;border:none;">Send Message
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-      </button>
-    </form>
-  </div>
-</section>
 
 <!-- COMING SOON MODAL -->
 <div id="coming-soon-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
@@ -1438,6 +1872,183 @@ document.getElementById('coming-soon-modal').addEventListener('click', (e) => {
 document.querySelector('.mobile-menu-btn')?.addEventListener('click', () => {
   document.querySelector('.nav-links').classList.toggle('active');
 });
+
+// ── COWORK UI ANIMATION ──
+const scenarios = [
+  {
+    task: 'Send NDA for signature via SendSign',
+    sidebar: 'nda-signing',
+    userMsg: 'Send this NDA to jane@acme.com for signature',
+    claudeLines: [
+      'Done. I sent the NDA to Jane using your Standard NDA template.',
+      '',
+      '<span class="meta-label">Envelope:</span> <span class="meta-value">#NDA-2026-0142</span>',
+      '<span class="meta-label">Status:</span> <span class="meta-value">Sent ✓</span>',
+      '<span class="meta-label">Reminders:</span> <span class="meta-value">3 and 7 days</span>',
+    ]
+  },
+  {
+    task: 'Check signature status',
+    sidebar: 'msa-status',
+    userMsg: 'Has anyone signed the MSA yet?',
+    claudeLines: [
+      'Here\'s the status on the Globex MSA:',
+      '',
+      '<span class="meta-label">Alice Chen</span> — <span class="meta-value">Signed 2h ago ✓</span>',
+      '<span class="meta-label">Bob Park</span> — <span style="color:var(--yellow)">Viewed, not signed</span>',
+      '<span class="meta-label">Carol Wu</span> — <span style="color:var(--text-tertiary)">Not yet opened</span>',
+      '',
+      'Want me to nudge Bob and Carol?',
+    ]
+  },
+  {
+    task: 'Generate and send contract',
+    sidebar: 'nda-globex',
+    userMsg: 'Draft an NDA for Globex Inc and send it to legal@globex.com',
+    claudeLines: [
+      'I generated a mutual NDA between you and Globex Inc with signature blocks for both parties.',
+      '',
+      '<span class="meta-label">Document:</span> <span class="meta-value">Mutual NDA — Globex</span>',
+      '<span class="meta-label">Sent to:</span> <span class="meta-value">legal@globex.com</span>',
+      '<span class="meta-label">Your sig:</span> <span class="meta-value">Applied ✓</span>',
+    ]
+  },
+  {
+    task: 'Morning signature briefing',
+    sidebar: 'daily-briefing',
+    userMsg: 'Give me a briefing on all pending signatures',
+    claudeLines: [
+      'Morning briefing — 6 active envelopes:',
+      '',
+      '<span class="meta-label">Overdue:</span> <span style="color:var(--red)">1 — SOW (Acme, 5 days)</span>',
+      '<span class="meta-label">Pending:</span> <span style="color:var(--yellow)">3 — MSA, NDA, Offer</span>',
+      '<span class="meta-label">Completed:</span> <span class="meta-value">2 today ✓</span>',
+      '',
+      'The Acme SOW is 5 days overdue. Should I send a final reminder?',
+    ]
+  },
+  {
+    task: 'Bulk send offer letters',
+    sidebar: 'offers-batch',
+    userMsg: 'Bulk send this offer letter to all 12 candidates',
+    claudeLines: [
+      'Sending offer letters to 12 recipients using the Engineering Offer template.',
+      '',
+      '<span class="meta-label">Template:</span> <span class="meta-value">Engineering Offer</span>',
+      '<span class="meta-label">Sent:</span> <span class="meta-value">12 / 12 ✓</span>',
+      '<span class="meta-label">Tracking:</span> <span class="meta-value">All envelopes active</span>',
+    ]
+  }
+];
+
+let currentScenario = 0;
+const chatArea = document.getElementById('cowork-chat');
+const taskLabel = document.getElementById('task-name');
+const sidebarTask = document.getElementById('sidebar-task-name');
+
+function typeInto(el, text, speed = 28) {
+  return new Promise(resolve => {
+    let i = 0;
+    el.textContent = '';
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor-blink';
+    cursor.textContent = '|';
+    el.appendChild(cursor);
+    const interval = setInterval(() => {
+      cursor.before(document.createTextNode(text[i]));
+      i++;
+      if (i >= text.length) {
+        clearInterval(interval);
+        cursor.remove();
+        resolve();
+      }
+    }, speed);
+  });
+}
+
+function addClaudeResponse(lines) {
+  return new Promise(resolve => {
+    const msg = document.createElement('div');
+    msg.className = 'cowork-msg fade-in';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'cowork-avatar claude';
+    avatar.innerHTML = '✦';
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'cowork-bubble';
+    
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    chatArea.appendChild(msg);
+
+    let delay = 0;
+    lines.forEach((line, idx) => {
+      setTimeout(() => {
+        if (line === '') {
+          bubble.appendChild(document.createElement('br'));
+        } else {
+          const div = document.createElement('div');
+          div.innerHTML = line;
+          div.style.opacity = '0';
+          div.style.animation = 'fadeIn 0.3s ease forwards';
+          div.style.animationDelay = '0ms';
+          bubble.appendChild(div);
+        }
+        if (idx === lines.length - 1) {
+          setTimeout(resolve, 400);
+        }
+      }, delay);
+      delay += 120;
+    });
+  });
+}
+
+async function runCoworkScenario() {
+  const scenario = scenarios[currentScenario];
+  
+  // Update task label and sidebar
+  taskLabel.textContent = scenario.task;
+  if (sidebarTask) {
+    sidebarTask.childNodes[0].textContent = scenario.sidebar + ' ';
+  }
+  
+  // Clear chat
+  chatArea.innerHTML = '';
+  
+  // Create user message with typing
+  const userMsg = document.createElement('div');
+  userMsg.className = 'cowork-msg';
+  
+  const userAvatar = document.createElement('div');
+  userAvatar.className = 'cowork-avatar user';
+  userAvatar.textContent = 'Y';
+  
+  const userBubble = document.createElement('div');
+  userBubble.className = 'cowork-bubble';
+  
+  userMsg.appendChild(userAvatar);
+  userMsg.appendChild(userBubble);
+  chatArea.appendChild(userMsg);
+  
+  // Type user message
+  await typeInto(userBubble, scenario.userMsg, 25);
+  
+  // Pause like Claude is thinking
+  await new Promise(r => setTimeout(r, 800));
+  
+  // Show Claude response
+  await addClaudeResponse(scenario.claudeLines);
+  
+  // Hold for reading
+  await new Promise(r => setTimeout(r, 4000));
+  
+  // Next
+  currentScenario = (currentScenario + 1) % scenarios.length;
+  runCoworkScenario();
+}
+
+setTimeout(runCoworkScenario, 1200);
 </script>
 </body>
 </html>
