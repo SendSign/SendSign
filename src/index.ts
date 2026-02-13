@@ -132,14 +132,15 @@ app.use('/api/integrations', apiRateLimiter, authenticate, tenantContext, integr
 app.use('/api/organizations', apiRateLimiter, authenticate, tenantContext, organizationsRoutes);
 app.use('/api/compliance', apiRateLimiter, authenticate, tenantContext, complianceRoutes);
 
-// ─── Serve Signing UI (React SPA) ───────────────────────────────────
+// ─── Serve Frontend (Marketing + Signing UI) ────────────────────────
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const signingUiPath = path.resolve(__dirname, '../signing-ui/dist');
+const marketingPath = path.resolve(__dirname, '../marketing');
 
-// Log the resolved frontend path for debugging
-console.log('Frontend path:', signingUiPath);
-console.log('Frontend exists:', fs.existsSync(signingUiPath));
+// Log resolved paths for debugging
+console.log('Signing UI path:', signingUiPath, '| Exists:', fs.existsSync(signingUiPath));
+console.log('Marketing path:', marketingPath, '| Exists:', fs.existsSync(marketingPath));
 
 // Billing success/cancel pages — redirect to API billing routes
 app.get('/billing/success', (req, res) => {
@@ -150,41 +151,82 @@ app.get('/billing/cancel', (_req, res) => {
   res.redirect('/');
 });
 
-// Serve static files from the frontend build (if it exists)
+// Serve static assets from signing-ui (CSS, JS, images, manifest.json)
+// These need to be accessible from all signing UI routes
 if (fs.existsSync(signingUiPath)) {
-  // Serve all static assets (CSS, JS, images, manifest.json, etc.)
-  app.use(express.static(signingUiPath, {
+  app.use('/assets', express.static(path.join(signingUiPath, 'assets'), {
     maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
     etag: true,
   }));
-
-  // SPA fallback: serve index.html for all non-API routes
-  app.get('*', (req, res, next) => {
-    // Skip API routes, control plane, health checks, and MCP
-    if (
-      req.path.startsWith('/api') ||
-      req.path.startsWith('/control') ||
-      req.path.startsWith('/health') ||
-      req.path.startsWith('/mcp')
-    ) {
-      return next();
-    }
-
-    // Serve index.html for all other routes (SPA routing)
-    res.sendFile(path.join(signingUiPath, 'index.html'));
-  });
-} else {
-  console.warn('⚠️  Frontend build not found at', signingUiPath);
-  console.warn('⚠️  The signing UI will not be available. API routes will still work.');
   
-  // Fallback for missing frontend
-  app.get('/', (req, res) => {
+  // Serve other static files (manifest.json, service worker, etc.)
+  app.use(express.static(signingUiPath, {
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+    etag: true,
+    index: false, // Don't serve index.html automatically
+  }));
+}
+
+// ─── Route: Marketing Landing Page ──────────────────────────────────
+
+// Root path serves the marketing landing page
+app.get('/', (req, res) => {
+  const marketingIndex = path.join(marketingPath, 'index.html');
+  if (fs.existsSync(marketingIndex)) {
+    res.sendFile(marketingIndex);
+  } else {
     res.status(503).json({
       success: false,
-      error: 'Frontend not available',
-      message: 'The signing UI is not built. The API is still available at /api/*',
+      error: 'Marketing page not available',
+      message: 'The landing page is not built. Try /app for the signing dashboard.',
     });
-  });
+  }
+});
+
+// ─── Route: Signing UI (React SPA) ──────────────────────────────────
+
+// Signing ceremony, field placement, and dashboard routes serve the React app
+const signingUiRoutes = [
+  '/app',
+  '/app/*',
+  '/dashboard',
+  '/dashboard/*',
+  '/login',
+  '/register',
+  '/sign/*',
+  '/prepare/*',
+  '/verify',
+  '/complete',
+  '/expired',
+  '/in-person/*',
+  '/powerform/*',
+  '/admin',
+  '/admin/*',
+  '/profile',
+  '/privacy',
+  '/terms',
+];
+
+if (fs.existsSync(signingUiPath)) {
+  const signingUiIndex = path.join(signingUiPath, 'index.html');
+  
+  for (const route of signingUiRoutes) {
+    app.get(route, (req, res) => {
+      res.sendFile(signingUiIndex);
+    });
+  }
+} else {
+  console.warn('⚠️  Signing UI not found at', signingUiPath);
+  
+  for (const route of signingUiRoutes) {
+    app.get(route, (req, res) => {
+      res.status(503).json({
+        success: false,
+        error: 'Signing UI not available',
+        message: 'The signing UI is not built. API routes are still available at /api/*',
+      });
+    });
+  }
 }
 
 // Error handling middleware

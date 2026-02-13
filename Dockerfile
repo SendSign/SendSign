@@ -44,6 +44,7 @@ WORKDIR /app
 COPY --from=builder --chown=sendsign:sendsign /app/src ./src
 COPY --from=builder --chown=sendsign:sendsign /app/node_modules ./node_modules
 COPY --from=builder --chown=sendsign:sendsign /app/signing-ui/dist ./signing-ui/dist
+COPY --from=builder --chown=sendsign:sendsign /app/marketing ./marketing
 COPY --from=builder --chown=sendsign:sendsign /app/package.json ./package.json
 COPY --from=builder --chown=sendsign:sendsign /app/drizzle.config.ts ./drizzle.config.ts
 
