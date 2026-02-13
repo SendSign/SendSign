@@ -109,6 +109,10 @@ export async function createEnvelope(input: CreateEnvelopeInput): Promise<Envelo
     })
     .returning();
 
+  if (!envelope) {
+    throw new Error('Failed to create envelope: INSERT did not return the created row');
+  }
+
   // Insert signers
   const signerInserts = input.signers.map((s, idx) => ({
     tenantId: input.tenantId,
